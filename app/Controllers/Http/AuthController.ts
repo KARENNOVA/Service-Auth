@@ -60,7 +60,7 @@ export default class AuthController {
   /**
    * signIn
    */
-  public async signIn(ctx: HttpContextContract) {}
+  public async signIn({}: HttpContextContract) {}
 
   /**
    * index

@@ -3,8 +3,7 @@ import DetailsUser from "App/Models/DetailsUser";
 import Role from "App/Models/Role";
 import User from "App/Models/User";
 import AuditTrail from "App/Utils/classes/AuditTrail";
-import { IAuditTrail, IDetailsUser } from "App/Utils/interfaces";
-import { IUser } from "App/Utils/interfaces/user";
+import { IDetailsUser } from "App/Utils/interfaces";
 import CreateUserValidator from "App/Validators/CreateUserValidator";
 
 export default class UsersController {
@@ -29,7 +28,7 @@ export default class UsersController {
   /**
    * setRole
    */
-  public async setRole(ctx: HttpContextContract) {
+  public async setRole({}: HttpContextContract) {
     try {
       User.all();
     } catch (error) {}
@@ -38,7 +37,7 @@ export default class UsersController {
   /**
    * getDataUser
    */
-  public async getDataUser(ctx: HttpContextContract) {}
+  public async getDataUser({}: HttpContextContract) {}
 
   // POST
   /**
