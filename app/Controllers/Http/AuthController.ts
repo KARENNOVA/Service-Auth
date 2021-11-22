@@ -5,7 +5,7 @@ import {
   authenticationUme,
   base64encode,
   bcryptCompare,
-} from "App/Utils/Functions";
+} from "App/Utils/functions";
 import User from "App/Models/User";
 
 export default class AuthController {

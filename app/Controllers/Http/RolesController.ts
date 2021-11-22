@@ -1,15 +1,15 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Role from "App/Models/Role";
 import AuditTrail from "App/Utils/classes/AuditTrail";
-import { IPayloadRole, IRole } from "App/Utils/Interfaces/role.interface";
+import { IPayloadRole, IRole } from "App/Utils/interfaces/role.interface";
 import CreateRoleValidator from "App/Validators/CreateRoleValidator";
 import UpdateRoleValidator from "App/Validators/UpdateRoleValidator";
 import {
   assignPermits,
   changeStatus,
   messageError,
-} from "../../Utils/Functions";
-import { IResponseData } from "../../Utils/Interfaces/index";
+} from "../../Utils/functions";
+import { IResponseData } from "../../Utils/interfaces/index";
 
 // MODELS
 import UserRole from "App/Models/UserRole";

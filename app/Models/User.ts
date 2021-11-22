@@ -1,5 +1,5 @@
 import { BaseModel, column } from "@ioc:Adonis/Lucid/Orm";
-import { IAuditTrail } from "App/Utils/Interfaces";
+import { IAuditTrail } from "App/Utils/interfaces";
 
 export default class User extends BaseModel {
   @column({ isPrimary: true })

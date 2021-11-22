@@ -8,11 +8,11 @@ import {
   IDataUserPayload,
   IDetailsUser,
   IUserPayload,
-} from "App/Utils/Interfaces";
+} from "App/Utils/interfaces";
 import CreateUserValidator from "App/Validators/CreateUserValidator";
-import { IUser } from "./../../Utils/Interfaces/user";
-import { base64encode } from "App/Utils/Functions";
-import { bcryptEncode } from "./../../Utils/functions/auth";
+import { IUser } from "../../Utils/interfaces/user";
+import { base64encode } from "App/Utils/functions";
+import { bcryptEncode } from "../../Utils/functions/auth";
 
 export default class UsersController {
   /**

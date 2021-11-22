@@ -1,8 +1,8 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Database from "@ioc:Adonis/Lucid/Database";
 import Permit from "App/Models/Permit";
-import { messageError } from "App/Utils/Functions";
-import { IResponseData } from "../../Utils/Interfaces/index";
+import { messageError } from "App/Utils/functions";
+import { IResponseData } from "../../Utils/interfaces/index";
 
 export default class PermitsController {
   public async index({}: HttpContextContract) {}

@@ -1,6 +1,6 @@
 // import jwt from "jsonwebtoken";
 import moment from "moment";
-import { IDataUser, IUpdatedValues } from "../Interfaces";
+import { IDataUser, IUpdatedValues } from "../interfaces";
 
 export default class AuditTrail {
   private token: string | null;
