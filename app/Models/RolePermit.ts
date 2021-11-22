@@ -1,7 +1,7 @@
 import { BaseModel, column } from "@ioc:Adonis/Lucid/Orm";
-import { IAuditTrail } from "App/Utils/interfaces";
+import { IAuditTrail } from "App/Utils/Interfaces";
 
-export default class RolPermit extends BaseModel {
+export default class RolePermit extends BaseModel {
   @column({ isPrimary: true })
   public id: number;
 

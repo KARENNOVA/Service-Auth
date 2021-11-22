@@ -1,11 +1,19 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Role from "App/Models/Role";
 import AuditTrail from "App/Utils/classes/AuditTrail";
-import { IPayloadRole, IRole } from "App/Utils/interfaces/role.interface";
+import { IPayloadRole, IRole } from "App/Utils/Interfaces/role.interface";
 import CreateRoleValidator from "App/Validators/CreateRoleValidator";
 import UpdateRoleValidator from "App/Validators/UpdateRoleValidator";
-import { assignPermits, changeStatus } from "./../../Utils/functions";
-import { IResponseData } from "./../../Utils/interfaces/index";
+import {
+  assignPermits,
+  changeStatus,
+  messageError,
+} from "../../Utils/Functions";
+import { IResponseData } from "../../Utils/Interfaces/index";
+
+// MODELS
+import UserRole from "App/Models/UserRole";
+import RolePermit from "App/Models/RolePermit";
 
 export default class RolesController {
   public async index({}: HttpContextContract) {}
@@ -58,24 +66,101 @@ export default class RolesController {
     }
   }
 
-  public async store({}: HttpContextContract) {}
+  /**
+   * assign
+   */
+  public async assign({ request, response }: HttpContextContract) {
+    const roles = request.body()["roles"];
+    const { to } = request.qs();
 
-  public async show({}: HttpContextContract) {}
-
-  public async showAll({ response }: HttpContextContract) {
     try {
-      const roles = await Role.query().where("status", 1).orderBy("id", "desc");
+      const auditTrail = new AuditTrail();
 
-      return response.status(200).json({
-        message: "Rol creado correctamente.",
-        results: roles,
+      let tmp: any[] = [];
+      roles.map((role) => {
+        tmp.push({
+          user_id: to,
+          role_id: role,
+          status: 1,
+          audit_trail: auditTrail.getAsJson(),
+        });
       });
+      console.log(tmp);
+
+      const results = await UserRole.createMany(tmp);
+      console.log(results);
     } catch (error) {
       console.error(error);
       return response.status(500).json({
-        message: "A ocurrido un error inesperado al obtener los Roles.",
-        error,
+        message:
+          "Ha ocurrido un error inesperado al asignar los Roles.\nRevisar Terminal.",
       });
+    }
+  }
+
+  public async store({}: HttpContextContract) {}
+
+  public async show({ request, response }: HttpContextContract) {
+    const { id } = request.qs();
+    let dataResponse: IResponseData = {
+      message: "Información detallada del rol ",
+    };
+
+    try {
+      const permitsByRole = await RolePermit.query()
+        .from("role_permits as rp")
+        .innerJoin("roles as r", "rp.role_id", "r.id")
+        .innerJoin("permits as p", "rp.permit_id", "p.id")
+        .innerJoin("status as s", "rp.status", "s.id")
+        .where("rp.role_id", parseInt(id));
+      console.log(permitsByRole);
+
+      // Assign and organized permits in array
+      let permits: any[] = [];
+
+      permitsByRole.map((permit) => {
+        let tmp: any = {
+          id: permit["$original"]["permit_id"],
+          name: permit["$extras"]["permit_name"],
+        };
+
+        permits.push(tmp);
+      });
+
+      // Organized object of results
+      let results: any = {
+        name: permitsByRole[0]["$extras"]["role_name"],
+        permits,
+      };
+
+      dataResponse["results"] = results;
+
+      return response.status(200).json(dataResponse);
+    } catch (error) {
+      console.error(error);
+      return response.status(500).json({
+        message:
+          "Ha ocurrido un error inesperado al obtener los valores.\nRevisar Terminal.",
+      });
+    }
+  }
+
+  public async showAll({ response }: HttpContextContract) {
+    let dataResponse: IResponseData = { message: "Todos los roles." };
+
+    try {
+      const roles = await Role.query().where("status", 1).orderBy("id", "desc");
+
+      dataResponse["results"] = roles;
+      dataResponse["total"] = roles.length;
+
+      return response.status(200).json(dataResponse);
+    } catch (error) {
+      return messageError(
+        error,
+        response,
+        "Ha ocurrido un error inesperado al obtener los Roles."
+      );
     }
   }
 
@@ -109,7 +194,7 @@ export default class RolesController {
 
         responseData[
           "message"
-        ] = `Rol ${roleUpdated.name} actualizado correctamente.`;
+        ] = `Rol ${roleUpdated.role_name} actualizado correctamente.`;
         responseData["results"] = roleUpdated;
 
         return response.status(200).json(responseData);

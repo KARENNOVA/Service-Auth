@@ -1,12 +1,12 @@
 import { BaseModel, column } from "@ioc:Adonis/Lucid/Orm";
-import { IAuditTrail } from "App/Utils/interfaces";
+import { IAuditTrail } from "App/Utils/Interfaces";
 
 export default class Role extends BaseModel {
   @column({ isPrimary: true })
   public id: number;
 
   @column()
-  public name: string;
+  public role_name: string;
 
   @column()
   public status: number;

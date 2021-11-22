@@ -1,7 +1,8 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Database from "@ioc:Adonis/Lucid/Database";
 import Permit from "App/Models/Permit";
-import { IResponseData } from "./../../Utils/interfaces/index";
+import { messageError } from "App/Utils/Functions";
+import { IResponseData } from "../../Utils/Interfaces/index";
 
 export default class PermitsController {
   public async index({}: HttpContextContract) {}
@@ -40,21 +41,36 @@ export default class PermitsController {
 
   public async showAll({ response }: HttpContextContract) {
     let dataResponse: IResponseData = { message: "Todos los permisos" };
+
     try {
       const permits = await Permit.query()
         .where("status", 1)
-        .orderBy("id", "desc");
+        .orderBy("id", "asc");
 
-      dataResponse.results = permits;
+      dataResponse["results"] = permits;
+      dataResponse["total"] = permits.length;
       return response.status(200).json(dataResponse);
     } catch (error) {
-      console.error(error);
+      return messageError(
+        error,
+        response,
+        "Ha ocurrido un error inesperado al obtener los permisos."
+      );
     }
   }
 
   public async edit({}: HttpContextContract) {}
 
-  public async update({}: HttpContextContract) {}
+  public async update({ response }: HttpContextContract) {
+    try {
+    } catch (error) {
+      return messageError(
+        error,
+        response,
+        "Ha ocurrido un error inesperado al actualizar los permisos."
+      );
+    }
+  }
 
   public async destroy({}: HttpContextContract) {}
 }

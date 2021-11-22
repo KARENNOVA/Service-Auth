@@ -1,38 +1,5 @@
-export * from "./auth";
-import RolPermit from "App/Models/RolPermit";
 import AuditTrail from "App/Utils/classes/AuditTrail";
-import UserPermit from "./../../Models/UserPermit";
-
-type Action = "inactivate" | "activate";
-
-export const assignPermits = async (
-  permits: number[],
-  auditTrail: AuditTrail,
-  idRole?: number,
-  idUser?: number
-) => {
-  try {
-    permits.map(async (permit) => {
-      let tmp: any = {
-        permit_id: permit,
-        status: 1,
-        audit_trail: auditTrail.getAsJson(),
-      };
-      if (idRole) {
-        tmp.rol_id = idRole;
-        await RolPermit.create(tmp);
-      } else {
-        tmp.user_id = idUser;
-        await UserPermit.create(tmp);
-      }
-    });
-    return { success: true };
-  } catch (error) {
-    console.error(error);
-
-    return { success: false };
-  }
-};
+import { IResponseData } from "../Interfaces/index";
 
 export const changeStatus = async (
   model: any,
@@ -68,3 +35,21 @@ export const changeStatus = async (
     return { success: false, results: error };
   }
 };
+
+export const messageError = (
+  error: any,
+  response: any,
+  initialMessage: string = "Ha ocurrido un error inesperado"
+) => {
+  let errorData: IResponseData = { message: initialMessage };
+  console.error(error);
+  console.error(error.name);
+  console.error(error.message);
+
+  errorData.error = { name: error.name, message: error.message };
+
+  return response.status(500).json(errorData);
+};
+
+export * from "./auth";
+export * from "./permit";

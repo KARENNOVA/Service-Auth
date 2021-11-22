@@ -1,4 +1,4 @@
-import { schema } from "@ioc:Adonis/Core/Validator";
+import { schema, rules } from "@ioc:Adonis/Core/Validator";
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 
 export default class CreateUserValidator {
@@ -25,13 +25,11 @@ export default class CreateUserValidator {
    */
   public schema = schema.create({
     user: schema.object().members({
-      id_number: schema.string({ trim: true }),
+      id_number: schema.number(),
       password: schema.string.optional({ trim: true }),
-      rol_id: schema.number.optional(),
     }),
     detailsUser: schema.object().members({
       id_type: schema.string({ trim: true }),
-      id_number: schema.string({ trim: true }),
       names: schema.object().members({
         firstName: schema.string({ trim: true }),
         lastName: schema.string({ trim: true }),
@@ -40,7 +38,10 @@ export default class CreateUserValidator {
         firstSurname: schema.string({ trim: true }),
         lastSurname: schema.string({ trim: true }),
       }),
-      email: schema.string({ trim: true }),
+      email: schema.string({ trim: true }, [
+        rules.email(),
+        rules.unique({ table: "details_users", column: "email" }),
+      ]),
       location: schema.string({ trim: true }),
       cellphone_number: schema.number(),
       phone_number: schema.number(),
@@ -49,9 +50,6 @@ export default class CreateUserValidator {
   });
 
   /**
-   * Custom messages for validation failures. You can make use of dot notation `(.)`
-   * for targeting nested fields and array expressions `(*)` for targeting all
-   * children of an array. For example:
    *
    * {
    *   'profile.username.required': 'Username is required',

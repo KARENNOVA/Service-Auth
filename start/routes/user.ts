@@ -1,4 +1,7 @@
+import Env from "@ioc:Adonis/Core/Env";
 import Route from "@ioc:Adonis/Core/Route";
+
+const apiVersion = Env.get("API_VERSION");
 
 Route.group(() => {
   Route.get("/", async (ctx) => {
@@ -16,4 +19,4 @@ Route.group(() => {
     );
     return new UsersController().create(ctx);
   });
-}).prefix("v1/users");
+}).prefix(`${apiVersion}/users`);

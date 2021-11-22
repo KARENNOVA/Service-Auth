@@ -56,4 +56,4 @@ export interface IResponseData {
 
 export * from "./detailsUser";
 export * from "./user";
-export * from "./permit.interface";
+// export * from "./permit.interface";

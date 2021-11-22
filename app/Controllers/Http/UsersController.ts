@@ -1,10 +1,18 @@
+// import bcrypt from "bcrypt";
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import DetailsUser from "App/Models/DetailsUser";
 import Role from "App/Models/Role";
 import User from "App/Models/User";
 import AuditTrail from "App/Utils/classes/AuditTrail";
-import { IDetailsUser } from "App/Utils/interfaces";
+import {
+  IDataUserPayload,
+  IDetailsUser,
+  IUserPayload,
+} from "App/Utils/Interfaces";
 import CreateUserValidator from "App/Validators/CreateUserValidator";
+import { IUser } from "./../../Utils/Interfaces/user";
+import { base64encode } from "App/Utils/Functions";
+import { bcryptEncode } from "./../../Utils/functions/auth";
 
 export default class UsersController {
   /**
@@ -43,18 +51,32 @@ export default class UsersController {
   /**
    * createUser
    */
-  public async createUser(reqDataUser): Promise<any> {
+  private async createUser(reqDataUser: IDataUserPayload): Promise<any> {
     const auditTrail = new AuditTrail();
+    let passwordHashed;
+
+    if (typeof reqDataUser["password"] === "string")
+      // passwordHashed = bcrypt.hashSync(reqDataUser["password"], 10);
+      passwordHashed = await bcryptEncode(reqDataUser["password"]);
+
+    let newUser: IUser = {
+      ...reqDataUser,
+      id_number: await base64encode(String(reqDataUser["id_number"])),
+      password: passwordHashed,
+      status: 1,
+      audit_trail: auditTrail.getAsJson(),
+    };
 
     try {
-      const user = await User.create({
-        ...reqDataUser,
-        status: 1,
-        audit_trail: auditTrail.getAsJson(),
-      });
+      const user = await User.create(newUser);
       return { user, auditTrail };
     } catch (error) {
       console.error(error);
+      if (error.code === "23505")
+        return Promise.reject(
+          'El usuario ya existe.\nSi no recuerda la contraseña ir a la sección de "¿Olvidó su Contraseña?"'
+        );
+
       return Promise.reject(
         "A ocurrido un error inesperado al crear el Usuario."
       );
@@ -73,7 +95,7 @@ export default class UsersController {
       notification: false,
 
       id_type: reqDetailsUser.id_type.trim(),
-      id_number: reqDetailsUser.id_number.trim(),
+      id_number: reqDetailsUser.id_number,
 
       names: reqDetailsUser.names,
       surnames: reqDetailsUser.surnames,
@@ -104,26 +126,26 @@ export default class UsersController {
   /**
    * create
    */
-  public async create(ctx: HttpContextContract) {
-    const payload: any = await ctx.request.validate(CreateUserValidator);
+  public async create({ response, request }: HttpContextContract) {
+    const payload: IUserPayload = await request.validate(CreateUserValidator);
 
     try {
-      const { user, auditTrail } = await this.createUser(payload.user);
+      const { user, auditTrail } = await this.createUser(payload["user"]);
 
       const detailsUser = await this.createDetailsUser(
         user.id,
-        payload.detailsUser,
+        { ...payload["detailsUser"], id_number: payload["user"]["id_number"] },
         auditTrail
       );
-      return ctx.response.status(200).json({
+      return response.status(200).json({
         message: "Usuario creado correctamente.",
         results: { user, detailsUser },
       });
     } catch (error) {
       console.error(error);
 
-      return ctx.response.status(500).json({
-        error,
+      return response.status(500).json({
+        message: error,
       });
     }
   }

@@ -65,7 +65,6 @@ const sha256 = async (str: string) => {
 export const bcryptEncode = async (passwordNaked: string): Promise<string> => {
   const saltRounds = 10;
   try {
-    console.log("line 96 works");
     const hash = await bcrypt.hash(passwordNaked, saltRounds);
 
     // Store hash in your password DB.
@@ -81,7 +80,6 @@ export const bcryptEncode = async (passwordNaked: string): Promise<string> => {
 export const bcryptCompare = async (password, hash) => {
   try {
     const flag = bcrypt.compare(password, hash);
-    console.log(flag);
 
     return flag;
   } catch (error) {

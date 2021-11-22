@@ -1,5 +1,6 @@
-DROP table if EXISTS rol_permits cascade;
+DROP table if EXISTS role_permits cascade;
 DROP table if EXISTS user_permits cascade;
+DROP table if EXISTS user_roles cascade;
 DROP table if EXISTS details_user cascade;
 DROP table if EXISTS users cascade;
 DROP table if EXISTS permits cascade;
@@ -8,14 +9,15 @@ DROP table if EXISTS status cascade;
 
 -- GENERAL TABLES
 CREATE TABLE IF NOT EXISTS status (
-	id INT PRIMARY KEY,
-	name VARCHAR(25) UNIQUE
+	id SERIAL PRIMARY KEY,
+	status_name VARCHAR(25) UNIQUE
 );
 
+-- Roles and Permits
 CREATE table IF NOT EXISTS roles (
 	id SERIAL PRIMARY KEY,
 
-	name varchar(100) NOT NULL,
+	role_name varchar(100) UNIQUE NOT NULL,
 
 	status int not null,
 	audit_trail json not null,
@@ -28,51 +30,46 @@ CREATE table IF NOT EXISTS roles (
 CREATE TABLE IF NOT EXISTS permits (
 	id SERIAL PRIMARY KEY,
 
-	name varchar(100) NOT NULL,
+	permit_name varchar(100) UNIQUE NOT NULL,
 
 	status int not null,
 	audit_trail json not null,
 
-	CONSTRAINT fk_permissions_status
+	CONSTRAINT fk_permits_status
       FOREIGN KEY(status) 
 	  REFERENCES status(id)
 );
 
-CREATE TABLE IF NOT EXISTS rol_permits (
+CREATE TABLE IF NOT EXISTS role_permits (
 	id SERIAL PRIMARY KEY,
 
-	rol_id int NOT NULL,
+	role_id int NOT NULL,
 	permit_id int NOT NULL,
 
 	status int not null,
 	audit_trail json not null,
 
-	CONSTRAINT fk_rol_permits_status
+	CONSTRAINT fk_role_permits_status
       FOREIGN KEY(status) 
 	  REFERENCES status(id),
-	CONSTRAINT fk_rol_permits
-      FOREIGN KEY(rol_id) 
+	CONSTRAINT fk_role_permits
+      FOREIGN KEY(role_id) 
 	  REFERENCES roles(id),
 	CONSTRAINT fk_permits_rol_permits
       FOREIGN KEY(permit_id) 
 	  REFERENCES permits(id)
 );
 
-
+-- Users, Roles and Permits
 CREATE table IF NOT EXISTS users (
 	id SERIAL PRIMARY KEY,
 
 	id_number varchar(200) UNIQUE not null,
 	password varchar(200),
 
-	rol_id int,
-
 	status int not null,
 	audit_trail json not null,
 
-	CONSTRAINT fk_rol
-		FOREIGN KEY(rol_id) 
-		REFERENCES roles(id),
 	CONSTRAINT fk_users_status
 		FOREIGN KEY(status) 
 	  	REFERENCES status(id)
@@ -87,7 +84,7 @@ CREATE TABLE IF NOT EXISTS user_permits (
 	status int not null,
 	audit_trail json not null,
 
-	CONSTRAINT fk_rol_permits_status
+	CONSTRAINT fk_user_permits_status
       FOREIGN KEY(status) 
 	  REFERENCES status(id),
 	CONSTRAINT fk_user_permits
@@ -98,7 +95,27 @@ CREATE TABLE IF NOT EXISTS user_permits (
 	  REFERENCES permits(id)
 );
 
-CREATE table IF NOT EXISTS details_user (
+CREATE TABLE IF NOT EXISTS user_roles (
+	id SERIAL PRIMARY KEY,
+
+	user_id int NOT NULL,
+	role_id int NOT NULL,
+
+	status int not null,
+	audit_trail json not null,
+
+	CONSTRAINT fk_user_roles_status
+      FOREIGN KEY(status) 
+	  REFERENCES status(id),
+	CONSTRAINT fk_user_permits
+      FOREIGN KEY(user_id) 
+	  REFERENCES users(id),
+	CONSTRAINT fk_user_roles
+      FOREIGN KEY(role_id) 
+	  REFERENCES roles(id)
+);
+
+CREATE table IF NOT EXISTS details_users (
 	id SERIAL PRIMARY KEY,
 
 	society_type varchar(100) not null,
@@ -116,7 +133,7 @@ CREATE table IF NOT EXISTS details_user (
 	phone_number double precision not null,
 	gender varchar(10) not null,
 
-	user_id int not null,
+	user_id int UNIQUE not null,
 
 	status int not null,
 	audit_trail json not null,
@@ -128,7 +145,6 @@ CREATE table IF NOT EXISTS details_user (
 		FOREIGN KEY(status) 
 	  	REFERENCES status(id)
 );
-
 
 -- Supervisor
 -- Asignar y crear roles
@@ -396,7 +412,7 @@ INSERT
 	);
 
 INSERT 
-	INTO rol_permits 
+	INTO role_permits 
 	VALUES (DEFAULT, 1, 1, 1, '{"created_by":"Administrador","created_on":1634341311411,"updated_by":null,"updated_on":null,"updated_values":null}'), 
 	(DEFAULT, 1, 2, 1, '{"created_by":"Administrador","created_on":1634341311411,"updated_by":null,"updated_on":null,"updated_values":null}'), 
 	(DEFAULT, 1, 3, 1, '{"created_by":"Administrador","created_on":1634341311411,"updated_by":null,"updated_on":null,"updated_values":null}'), 

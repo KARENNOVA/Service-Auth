@@ -5,11 +5,11 @@ Route.group(() => {
     const { default: RolesController } = await import(
       "App/Controllers/Http/RolesController"
     );
-    const { default: PermitsController } = await import(
-      "App/Controllers/Http/PermitsController"
-    );
+    // const { default: PermitsController } = await import(
+    //   "App/Controllers/Http/PermitsController"
+    // );
 
-    if (ctx.request.qs().id) return new PermitsController().show(ctx);
+    if (ctx.request.qs().id) return new RolesController().show(ctx);
 
     return new RolesController().showAll(ctx);
   });
@@ -28,6 +28,13 @@ Route.group(() => {
       "App/Controllers/Http/RolesController"
     );
     return new RolesController().create(ctx);
+  });
+
+  Route.post("/assign", async (ctx) => {
+    const { default: RolesController } = await import(
+      "App/Controllers/Http/RolesController"
+    );
+    return new RolesController().assign(ctx);
   });
 
   // PUT
