@@ -27,7 +27,7 @@ Route.group(() => {
     const { default: RolesController } = await import(
       "App/Controllers/Http/RolesController"
     );
-    return new RolesController().create(ctx);
+    return new RolesController().create(ctx, "");
   });
 
   Route.post("/assign", async (ctx) => {
@@ -42,14 +42,14 @@ Route.group(() => {
     const { default: RolesController } = await import(
       "App/Controllers/Http/RolesController"
     );
-    return new RolesController().update(ctx);
+    return new RolesController().update(ctx, "");
   });
 
   Route.delete("/:id", async (ctx) => {
     const { default: RolesController } = await import(
       "App/Controllers/Http/RolesController"
     );
-    return new RolesController().inactivate(ctx);
+    return new RolesController().inactivate(ctx, "");
   });
 })
   .prefix("v1/roles")
