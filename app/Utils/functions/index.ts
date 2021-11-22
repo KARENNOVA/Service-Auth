@@ -1,5 +1,5 @@
 import AuditTrail from "App/Utils/classes/AuditTrail";
-import { IResponseData } from "../Interfaces/index";
+import { IResponseData } from "App/Utils/interfaces/index";
 
 export const changeStatus = async (
   model: any,
