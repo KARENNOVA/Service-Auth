@@ -18,7 +18,10 @@ import RolePermit from "App/Models/RolePermit";
 export default class RolesController {
   public async index({}: HttpContextContract) {}
 
-  public async create({ request, response }: HttpContextContract) {
+  public async create(
+    { request, response }: HttpContextContract,
+    token: string
+  ) {
     const payload: IPayloadRole = await request.validate(CreateRoleValidator);
     let message: string = "Rol creado correctamente.";
 
@@ -28,7 +31,7 @@ export default class RolesController {
       if (dataRole["permits"]) delete dataRole["permits"];
       dataRole["status"] = 1;
 
-      const auditTrail: AuditTrail = new AuditTrail();
+      const auditTrail: AuditTrail = new AuditTrail(token);
       dataRole["audit_trail"] = auditTrail.getAsJson();
 
       const role = await Role.create({ ...dataRole });
@@ -69,12 +72,18 @@ export default class RolesController {
   /**
    * assign
    */
-  public async assign({ request, response }: HttpContextContract) {
+  public async assign(
+    { request, response }: HttpContextContract,
+    token?: string
+  ) {
     const roles = request.body()["roles"];
     const { to } = request.qs();
 
+    let tmpToken: string = "";
+    if (token) tmpToken = token;
+
     try {
-      const auditTrail = new AuditTrail();
+      const auditTrail = new AuditTrail(tmpToken);
 
       let tmp: any[] = [];
       roles.map((role) => {
@@ -166,7 +175,10 @@ export default class RolesController {
 
   public async edit({}: HttpContextContract) {}
 
-  public async update({ request, response }: HttpContextContract) {
+  public async update(
+    { request, response }: HttpContextContract,
+    token: string
+  ) {
     const payload: IPayloadRole = await request.validate(UpdateRoleValidator);
     const { id } = request.qs();
     let responseData: IResponseData = {
@@ -178,7 +190,7 @@ export default class RolesController {
     try {
       const role = await Role.findOrFail(id);
 
-      const auditTrail = new AuditTrail(undefined, role.audit_trail);
+      const auditTrail = new AuditTrail(token, role.audit_trail);
       auditTrail.update("Administrador", newData, role);
 
       // Updating data
@@ -228,10 +240,18 @@ export default class RolesController {
   /**
    * inactivate
    */
-  public async inactivate({ request, response }: HttpContextContract) {
+  public async inactivate(
+    { request, response }: HttpContextContract,
+    token: string
+  ) {
     const { id } = request.params();
 
-    const { success, results } = await changeStatus(Role, id, "inactivate");
+    const { success, results } = await changeStatus(
+      Role,
+      id,
+      "inactivate",
+      token
+    );
 
     if (success)
       return response.status(200).json({
