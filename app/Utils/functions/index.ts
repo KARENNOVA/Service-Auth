@@ -1,15 +1,22 @@
+// UTILS
 import AuditTrail from "App/Utils/classes/AuditTrail";
 import { IResponseData } from "App/Utils/interfaces/index";
+import { decodeJWT } from "App/Utils/functions/jwt";
+
+// MODELS
+import DetailsUser from "App/Models/DetailsUser";
+import UserRole from "App/Models/UserRole";
 
 export const changeStatus = async (
   model: any,
   id: string | number,
-  action: Action
+  action: Action,
+  token: string
 ) => {
   try {
     const data = await model.findOrFail(id);
 
-    const auditTrail = new AuditTrail(undefined, data.audit_trail);
+    const auditTrail = new AuditTrail(token, data.audit_trail);
 
     if (action === "inactivate") {
       if (data.status != 0) data.status = 0;
@@ -49,6 +56,75 @@ export const messageError = (
   errorData.error = { name: error.name, message: error.message };
 
   return response.status(500).json(errorData);
+};
+
+export const getDataUser = async (token: string) => {
+  const { id } = decodeJWT(token);
+
+  try {
+    const detailsUser = await DetailsUser.query().where("user_id", id);
+
+    return detailsUser[0];
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+export const deleteDuplicates = (array: any[]) => {
+  let hash = {};
+  return array.filter((o) => (hash[o.id] ? false : (hash[o.id] = true)));
+};
+
+// Esto funciona correctamente, ¿Cómo? Sabrá Dios y mi yo del pasado.
+export const getPermitsAndRoles = async (request, response, id?) => {
+  let permits: any[] = [],
+    roles: any[] = [];
+
+  let payloadToken;
+  const token = request
+    .headers()
+    ["authorization"]?.split("Bearer")
+    .pop()
+    ?.trim();
+  if (token) payloadToken = decodeJWT(token);
+
+  let userId = id ? id : payloadToken.id;
+
+  try {
+    const userRoles = await UserRole.query()
+      .from("user_roles as ur")
+      .innerJoin("role_permits as rp", "ur.role_id", "rp.role_id")
+      .innerJoin("permits as p", "rp.permit_id", "p.id")
+      .innerJoin("roles as r", "ur.role_id", "r.id")
+      .where("ur.user_id", userId);
+
+    console.log(payloadToken);
+
+    userRoles.map((userRole) => {
+      roles.push({
+        id: userRole["$original"]["role_id"],
+        name: userRole["$extras"]["role_name"],
+      });
+    });
+
+    userRoles.map((userRole) => {
+      permits.push({
+        id: userRole["$extras"]["permit_id"],
+        name: userRole["$extras"]["permit_name"],
+      });
+    });
+
+    permits = deleteDuplicates(permits);
+    roles = deleteDuplicates(roles);
+
+    return { permits, roles, token };
+  } catch (error) {
+    console.error(error);
+    response.unauthorized({
+      error: "No tiene los permisos para realizar esta acción.",
+    });
+    return {};
+  }
 };
 
 export * from "./auth";

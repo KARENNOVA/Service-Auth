@@ -11,7 +11,7 @@ import {
 } from "App/Utils/interfaces";
 import CreateUserValidator from "App/Validators/CreateUserValidator";
 import { IUser } from "../../Utils/interfaces/user";
-import { base64encode } from "App/Utils/functions";
+import { base64encode, getPermitsAndRoles } from "App/Utils/functions";
 import { bcryptEncode } from "../../Utils/functions/auth";
 
 export default class UsersController {
@@ -47,12 +47,29 @@ export default class UsersController {
    */
   public async getDataUser({}: HttpContextContract) {}
 
+  public async getRolesAndPermits({ response, request }: HttpContextContract) {
+    const { id } = request.qs();
+
+    const { roles, permits } = await getPermitsAndRoles(request, response, id);
+
+    response
+      .status(200)
+      .json({ message: "Roles y Permisos", results: { roles, permits } });
+  }
+
   // POST
   /**
    * createUser
    */
-  private async createUser(reqDataUser: IDataUserPayload): Promise<any> {
-    const auditTrail = new AuditTrail();
+  private async createUser(
+    reqDataUser: IDataUserPayload,
+    token: string | undefined
+  ): Promise<any> {
+    let tmpToken: string = "";
+    if (token) tmpToken = token;
+    const auditTrail = new AuditTrail(tmpToken);
+    console.log(auditTrail.getAsJson());
+
     let passwordHashed;
 
     if (typeof reqDataUser["password"] === "string")
@@ -127,10 +144,25 @@ export default class UsersController {
    * create
    */
   public async create({ response, request }: HttpContextContract) {
+    const { permits, token } = await getPermitsAndRoles(request, response);
+    let flag: boolean = false;
+
+    permits?.map((permit) => {
+      if (permit.name === "crear_Usuarios") flag = true;
+    });
+
+    if (!flag)
+      return response
+        .status(403)
+        .json({ message: "No posee los permisos para crear un Usuario." });
+
     const payload: IUserPayload = await request.validate(CreateUserValidator);
 
     try {
-      const { user, auditTrail } = await this.createUser(payload["user"]);
+      const { user, auditTrail } = await this.createUser(
+        payload["user"],
+        token
+      );
 
       const detailsUser = await this.createDetailsUser(
         user.id,

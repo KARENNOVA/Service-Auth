@@ -18,12 +18,12 @@ export interface IDataUserPayload {
 
 interface INames {
   firstName: string;
-  lastName: string;
+  lastName?: string;
 }
 
 interface ISurnames {
   firstSurname: string;
-  lastSurname: string;
+  lastSurname?: string;
 }
 
 interface IDataDetailsUserPayload {

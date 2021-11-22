@@ -1,37 +1,43 @@
 // import jwt from "jsonwebtoken";
+import DetailsUser from "App/Models/DetailsUser";
 import moment from "moment";
-import { IDataUser, IUpdatedValues } from "../interfaces";
+import { getDataUser } from "../functions";
+import { IUpdatedValues } from "../interfaces";
 
 export default class AuditTrail {
-  private token: string | null;
-  private dataUser: IDataUser;
+  private dataUser: DetailsUser | undefined;
+  protected token: string;
   protected createdBy: string;
   protected createdOn: number;
   protected updatedBy: string | null;
   protected updatedOn: number | null;
   protected updatedValues: IUpdatedValues | null;
 
-  constructor(token?: string, auditTrail?: any) {
-    this.token = token ? token : null;
+  constructor(token: string, auditTrail?: any) {
+    this.token = token;
+    this.init();
 
-    this.dataUser = { id: 1, name: "Administrador" };
-    if (this.token !== null) {
-      //   const decodedJWT = this.decodeJWT();
-      //   this.createdBy = decodedJWT.auditTrail.createdBy;
-    }
     if (auditTrail) {
       this.createdBy = auditTrail.created_by;
       this.createdOn = auditTrail.created_on;
       this.updatedBy = auditTrail.updated_by;
       this.updatedOn = auditTrail.updated_on;
       this.updatedValues = auditTrail.updated_values;
-    } else {
-      this.createdBy = this.dataUser.name;
-      this.createdOn = moment().valueOf();
-      this.updatedBy = null;
-      this.updatedOn = null;
-      this.updatedValues = null;
     }
+  }
+
+  init() {
+    const self = this;
+    getDataUser(self.token).then((detailsUser) => {
+      if (typeof detailsUser !== "undefined") {
+        self.dataUser = detailsUser;
+        self.createdBy = `${self.dataUser.names.firstName} ${self.dataUser.surnames.firstSurname}`;
+        self.createdOn = moment().valueOf();
+        self.updatedBy = null;
+        self.updatedOn = null;
+        self.updatedValues = null;
+      }
+    });
   }
 
   // GETTERS AND SETTERS

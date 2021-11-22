@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Env from "@ioc:Adonis/Core/Env";
 import {
-  authenticationUme,
+  // authenticationUme,
   base64encode,
   bcryptCompare,
 } from "App/Utils/functions";
@@ -12,47 +12,45 @@ export default class AuthController {
   /**
    * index
    */
-  public async index(ctx: HttpContextContract) {
-    let autenticacion;
-
-    try {
-      autenticacion = await authenticationUme();
-      console.log(autenticacion);
-    } catch (error) {
-      console.error(error);
-      return ctx.response.send("error in autenticacion");
-    }
-
-    try {
-      return ctx.response.status(200).json({
-        info: { action: "registrarInfoPersona" },
-        persona: {
-          tipo_sociedad: "N-Persona Natural",
-          tipo_entidad: "NINGUNO",
-          tipo_identificacion: "1-Cedula de Ciudadania",
-          documento: "1017242383",
-          nombres: "Ficticio Prueba",
-          apellidos: "Listo ejemplo",
-          correo: "prueba@axcelsoftware.com",
-          direccion: "calle falsa 123",
-          barrio: "Candelaria",
-          telefono: "5814766",
-          celular: "300102000",
-          pais: "CO",
-          departamento: "05-ANTIOQUIA",
-          municipio: "05001-MEDELLÍN",
-          politica: "true",
-          notificacion: "false",
-          genero: "f",
-        },
-        autenticacion,
-      });
-    } catch (error) {
-      console.error(error);
-      return ctx.response
-        .status(500)
-        .json({ message: "Request to Projects failed!", error });
-    }
+  public async index({}: HttpContextContract) {
+    // let autenticacion;
+    // try {
+    //   autenticacion = await authenticationUme();
+    //   console.log(autenticacion);
+    // } catch (error) {
+    //   console.error(error);
+    //   return ctx.response.send("error in autenticacion");
+    // }
+    // try {
+    //   return ctx.response.status(200).json({
+    //     info: { action: "registrarInfoPersona" },
+    //     persona: {
+    //       tipo_sociedad: "N-Persona Natural",
+    //       tipo_entidad: "NINGUNO",
+    //       tipo_identificacion: "1-Cedula de Ciudadania",
+    //       documento: "1017242383",
+    //       nombres: "Ficticio Prueba",
+    //       apellidos: "Listo ejemplo",
+    //       correo: "prueba@axcelsoftware.com",
+    //       direccion: "calle falsa 123",
+    //       barrio: "Candelaria",
+    //       telefono: "5814766",
+    //       celular: "300102000",
+    //       pais: "CO",
+    //       departamento: "05-ANTIOQUIA",
+    //       municipio: "05001-MEDELLÍN",
+    //       politica: "true",
+    //       notificacion: "false",
+    //       genero: "f",
+    //     },
+    //     autenticacion,
+    //   });
+    // } catch (error) {
+    //   console.error(error);
+    //   return ctx.response
+    //     .status(500)
+    //     .json({ message: "Request to Projects failed!", error });
+    // }
   }
 
   // POST

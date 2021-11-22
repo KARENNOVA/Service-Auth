@@ -51,4 +51,6 @@ Route.group(() => {
     );
     return new RolesController().inactivate(ctx);
   });
-}).prefix("v1/roles");
+})
+  .prefix("v1/roles")
+  .middleware("logRegistered");

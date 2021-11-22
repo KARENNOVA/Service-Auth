@@ -32,11 +32,11 @@ export default class CreateUserValidator {
       id_type: schema.string({ trim: true }),
       names: schema.object().members({
         firstName: schema.string({ trim: true }),
-        lastName: schema.string({ trim: true }),
+        lastName: schema.string.optional({ trim: true }),
       }),
       surnames: schema.object().members({
         firstSurname: schema.string({ trim: true }),
-        lastSurname: schema.string({ trim: true }),
+        lastSurname: schema.string.optional({ trim: true }),
       }),
       email: schema.string({ trim: true }, [
         rules.email(),
