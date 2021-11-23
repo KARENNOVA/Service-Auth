@@ -5,7 +5,7 @@ export default class LogRequest {
     { request }: HttpContextContract,
     next: () => Promise<void>
   ) {
-    console.log(`-> ${request.method()}: ${request.url()}`);
+    console.log(`-> ${request.method()}: ${request.url()} (${request.ip()})`);
     await next();
   }
 }

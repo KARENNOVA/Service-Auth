@@ -1,4 +1,7 @@
 import Route from "@ioc:Adonis/Core/Route";
+import Env from "@ioc:Adonis/Core/Env";
+
+const apiVersion = Env.get("API_VERSION");
 
 Route.group(() => {
   // GET
@@ -17,4 +20,6 @@ Route.group(() => {
     );
     return new AuthController().logIn(ctx);
   });
-}).prefix("v1/auth");
+})
+  .prefix(`${apiVersion}/auth`)
+  .middleware("logRegistered");

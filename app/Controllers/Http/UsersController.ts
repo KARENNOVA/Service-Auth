@@ -1,7 +1,6 @@
 // import bcrypt from "bcrypt";
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import DetailsUser from "App/Models/DetailsUser";
-import Role from "App/Models/Role";
 import User from "App/Models/User";
 import AuditTrail from "App/Utils/classes/AuditTrail";
 import {
@@ -13,39 +12,62 @@ import CreateUserValidator from "App/Validators/CreateUserValidator";
 import { IUser } from "../../Utils/interfaces/user";
 import { base64encode, getPermitsAndRoles } from "App/Utils/functions";
 import { bcryptEncode } from "../../Utils/functions/auth";
+import { decodeJWT } from "App/Utils/functions/jwt";
 
 export default class UsersController {
   /**
-   * getRoles
-   */
-  public async getRoles(ctx: HttpContextContract) {
-    try {
-      const roles = await Role.all();
-      console.log(roles);
-
-      return ctx.response.status(200).json({ results: roles });
-    } catch (error) {
-      console.error(error);
-
-      return ctx.response
-        .status(500)
-        .json({ message: "Request to Roles failed!", error });
-    }
-  }
-
-  /**
-   * setRole
-   */
-  public async setRole({}: HttpContextContract) {
-    try {
-      User.all();
-    } catch (error) {}
-  }
-
-  /**
    * getDataUser
    */
-  public async getDataUser({}: HttpContextContract) {}
+  public async getDataUser({ response, request }: HttpContextContract) {
+    const { id } = request.qs();
+
+    let detailsUser;
+    let payloadToken;
+    const token = request
+      .headers()
+      ["authorization"]?.split("Bearer")
+      .pop()
+      ?.trim();
+    if (token) payloadToken = decodeJWT(token);
+
+    const { roles, permits } = await getPermitsAndRoles(request, response, id);
+
+    // let flag: boolean = false;
+
+    // permits?.map((permit) => {
+    //   if (permit.name === "detalles_Usuarios") flag = true;
+    // });
+
+    // if (!flag)
+    //   return response
+    //     .status(403)
+    //     .json({ message: "No posee los permisos para ver un Usuario." });
+
+    const userId = id ? id : payloadToken.id;
+
+    try {
+      detailsUser = await DetailsUser.query()
+        .from("details_users as du")
+        .innerJoin("status as s", "du.status", "s.id")
+        .select(["du.id as du_id", "*"])
+        .where("user_id", userId);
+    } catch (error) {
+      console.error(error);
+    }
+    detailsUser = {
+      ...detailsUser[0]["$attributes"],
+      id: detailsUser[0]["$extras"]["du_id"],
+      status: detailsUser[0]["$extras"]["status_name"],
+    };
+
+    delete detailsUser["user_id"];
+    console.log(detailsUser);
+
+    response.status(200).json({
+      message: "Detalles del Usuario",
+      results: { detailsUser, roles, permits },
+    });
+  }
 
   public async getRolesAndPermits({ response, request }: HttpContextContract) {
     const { id } = request.qs();

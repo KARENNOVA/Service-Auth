@@ -1,4 +1,7 @@
 import Route from "@ioc:Adonis/Core/Route";
+import Env from "@ioc:Adonis/Core/Env";
+
+const apiVersion = Env.get("API_VERSION");
 
 Route.group(() => {
   Route.get("/", async (ctx) => {
@@ -27,14 +30,21 @@ Route.group(() => {
     const { default: RolesController } = await import(
       "App/Controllers/Http/RolesController"
     );
-    return new RolesController().create(ctx, "");
+
+    return new RolesController().create(
+      ctx,
+      ctx.request.headers().authorization
+    );
   });
 
   Route.post("/assign", async (ctx) => {
     const { default: RolesController } = await import(
       "App/Controllers/Http/RolesController"
     );
-    return new RolesController().assign(ctx);
+    return new RolesController().assign(
+      ctx,
+      ctx.request.headers().authorization
+    );
   });
 
   // PUT
@@ -42,15 +52,21 @@ Route.group(() => {
     const { default: RolesController } = await import(
       "App/Controllers/Http/RolesController"
     );
-    return new RolesController().update(ctx, "");
+    return new RolesController().update(
+      ctx,
+      ctx.request.headers().authorization
+    );
   });
 
   Route.delete("/:id", async (ctx) => {
     const { default: RolesController } = await import(
       "App/Controllers/Http/RolesController"
     );
-    return new RolesController().inactivate(ctx, "");
+    return new RolesController().inactivate(
+      ctx,
+      ctx.request.headers().authorization
+    );
   });
 })
-  .prefix("v1/roles")
-  .middleware("logRegistered");
+  .prefix(`${apiVersion}/roles`)
+  .middleware(["verifyToken", "logRegistered"]);

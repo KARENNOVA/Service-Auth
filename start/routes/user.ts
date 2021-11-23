@@ -22,8 +22,6 @@ Route.group(() => {
 
   // POST
   Route.post("/", async (ctx) => {
-    // console.log(ctx);
-
     const { default: UsersController } = await import(
       "App/Controllers/Http/UsersController"
     );

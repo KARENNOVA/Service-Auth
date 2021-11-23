@@ -6,6 +6,7 @@ import { decodeJWT } from "App/Utils/functions/jwt";
 // MODELS
 import DetailsUser from "App/Models/DetailsUser";
 import UserRole from "App/Models/UserRole";
+import UserPermit from "App/Models/UserPermit";
 
 export const changeStatus = async (
   model: any,
@@ -88,7 +89,7 @@ export const getPermitsAndRoles = async (request, response, id?) => {
     ?.trim();
   if (token) payloadToken = decodeJWT(token);
 
-  let userId = id ? id : payloadToken.id;
+  let userId = typeof id !== "undefined" ? id : payloadToken.id;
 
   try {
     const userRoles = await UserRole.query()
@@ -98,12 +99,24 @@ export const getPermitsAndRoles = async (request, response, id?) => {
       .innerJoin("roles as r", "ur.role_id", "r.id")
       .where("ur.user_id", userId);
 
+    const userPermits = await UserPermit.query()
+      .from("user_permits as up")
+      .innerJoin("permits as p", "up.permit_id", "p.id")
+      .where("up.user_id", userId);
+
     console.log(payloadToken);
 
     userRoles.map((userRole) => {
       roles.push({
         id: userRole["$original"]["role_id"],
         name: userRole["$extras"]["role_name"],
+      });
+    });
+
+    userPermits.map((userRole) => {
+      permits.push({
+        id: userRole["$original"]["permit_id"],
+        name: userRole["$extras"]["permit_name"],
       });
     });
 

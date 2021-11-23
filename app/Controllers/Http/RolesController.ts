@@ -20,7 +20,7 @@ export default class RolesController {
 
   public async create(
     { request, response }: HttpContextContract,
-    token: string
+    token?: string
   ) {
     const payload: IPayloadRole = await request.validate(CreateRoleValidator);
     let message: string = "Rol creado correctamente.";
@@ -31,7 +31,10 @@ export default class RolesController {
       if (dataRole["permits"]) delete dataRole["permits"];
       dataRole["status"] = 1;
 
-      const auditTrail: AuditTrail = new AuditTrail(token);
+      let tmpToken = "";
+      if (token) tmpToken = token;
+
+      const auditTrail: AuditTrail = new AuditTrail(tmpToken);
       dataRole["audit_trail"] = auditTrail.getAsJson();
 
       const role = await Role.create({ ...dataRole });
@@ -177,7 +180,7 @@ export default class RolesController {
 
   public async update(
     { request, response }: HttpContextContract,
-    token: string
+    token?: string
   ) {
     const payload: IPayloadRole = await request.validate(UpdateRoleValidator);
     const { id } = request.qs();
@@ -190,7 +193,10 @@ export default class RolesController {
     try {
       const role = await Role.findOrFail(id);
 
-      const auditTrail = new AuditTrail(token, role.audit_trail);
+      let tmpToken: string = "";
+      if (token) tmpToken = token;
+
+      const auditTrail = new AuditTrail(tmpToken, role.audit_trail);
       auditTrail.update("Administrador", newData, role);
 
       // Updating data
@@ -242,15 +248,18 @@ export default class RolesController {
    */
   public async inactivate(
     { request, response }: HttpContextContract,
-    token: string
+    token?: string
   ) {
     const { id } = request.params();
+
+    let tmpToken: string = "";
+    if (token) tmpToken = token;
 
     const { success, results } = await changeStatus(
       Role,
       id,
       "inactivate",
-      token
+      tmpToken
     );
 
     if (success)

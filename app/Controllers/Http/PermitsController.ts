@@ -1,13 +1,54 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Database from "@ioc:Adonis/Lucid/Database";
 import Permit from "App/Models/Permit";
+import AuditTrail from "App/Utils/classes/AuditTrail";
 import { messageError } from "App/Utils/functions";
 import { IResponseData } from "../../Utils/interfaces/index";
+import UserPermit from "App/Models/UserPermit";
 
 export default class PermitsController {
   public async index({}: HttpContextContract) {}
 
   public async create({}: HttpContextContract) {}
+
+  /**
+   * assign
+   */
+  public async assign(
+    { request, response }: HttpContextContract,
+    token?: string
+  ) {
+    const permits = request.body()["permits"];
+    const { to } = request.qs();
+
+    let tmpToken: string = "";
+    if (token) tmpToken = token.replace("Bearer ", "");
+    console.log(tmpToken);
+
+    try {
+      const auditTrail = new AuditTrail(tmpToken);
+
+      let tmp: any[] = [];
+      permits.map((permit) => {
+        tmp.push({
+          user_id: to,
+          permit_id: permit,
+          status: 1,
+          audit_trail: auditTrail.getAsJson(),
+        });
+      });
+      console.log(tmp);
+
+      const results = await UserPermit.createMany(tmp);
+      console.log(results);
+    } catch (error) {
+      console.error(error);
+      return response.status(500).json({
+        message:
+          "Ha ocurrido un error inesperado al asignar los Permisos.\nRevisar Terminal.",
+      });
+    }
+  }
 
   public async store({}: HttpContextContract) {}
 
