@@ -18,6 +18,9 @@ import {
 } from "App/Utils/functions";
 import { decodeJWT, getToken } from "App/Utils/functions/jwt";
 import { bcryptEncode } from "./../../Utils/functions/auth";
+import { changeStatus } from "./../../Utils/functions/index";
+import UserRole from "./../../Models/UserRole";
+import UserPermit from "./../../Models/UserPermit";
 
 export default class UsersController {
   /**
@@ -340,12 +343,11 @@ export default class UsersController {
 
           // Updating data
           try {
-            await user
-              .merge({
-                password: await bcryptEncode(newData.user.password),
-                audit_trail: auditTrail.getAsJson(),
-              })
-              .save();
+            await user.merge({
+              password: await bcryptEncode(newData.user.password),
+              audit_trail: auditTrail.getAsJson(),
+            });
+            await user.save();
 
             return response.status(200).json({
               message: `Usuario ${detailsUser.names.firstName} actualizado satisfactoriamente`,
@@ -364,6 +366,74 @@ export default class UsersController {
       return response
         .status(500)
         .json({ message: "Error interno: Servidor", error });
+    }
+  }
+
+  /**
+   * inactivate
+   */
+  public async inactivate({ request, response }: HttpContextContract) {
+    const token = getToken(request.headers());
+    const { id } = request.qs();
+    let user: User, detailsUser: DetailsUser;
+
+    try {
+      user = await User.findOrFail(id);
+      detailsUser = await DetailsUser.findOrFail(id);
+    } catch (error) {
+      return response.status(400).json({
+        message: `El id [${id}] de usuario no existe, verificar si se encuentra creado.`,
+      });
+    }
+
+    const { success, results } = await changeStatus(
+      user,
+      id,
+      "inactivate",
+      token
+    );
+
+    if (success) {
+      const { success, results } = await changeStatus(
+        detailsUser,
+        id,
+        "inactivate",
+        token
+      );
+
+      if (success) {
+        try {
+          const userRoles = await UserRole.query().where("user_id", id);
+          userRoles.map(async (ur) => {
+            await ur.delete();
+          });
+
+          const userPermits = await UserPermit.query().where("user_id", id);
+          userPermits.map(async (up) => {
+            await up.delete();
+          });
+
+          return await response
+            .status(200)
+            .json({ message: "Usuario inactivado y datos asociados." });
+        } catch (error) {
+          console.error(error);
+
+          return response.status(500).json({
+            message: `Error al eliminar las relaciones de roles y permisos`,
+          });
+        }
+      } else {
+        console.error(results);
+        return response
+          .status(400)
+          .json({ message: `Error al inactivar los datos del usuario` });
+      }
+    } else {
+      console.error(results);
+      return response
+        .status(400)
+        .json({ message: `Error al inactivar el usuario` });
     }
   }
 }

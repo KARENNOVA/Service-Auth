@@ -35,6 +35,13 @@ Route.group(() => {
     );
     return new UsersController().update(ctx);
   });
+
+  Route.delete("/", async (ctx) => {
+    const { default: UsersController } = await import(
+      "App/Controllers/Http/UsersController"
+    );
+    return new UsersController().inactivate(ctx);
+  });
 })
   .prefix(`${apiVersion}/users`)
   .middleware(["logRegistered"]);
