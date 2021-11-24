@@ -16,6 +16,11 @@ export default class DetailsUser extends BaseModel {
   public notification?: boolean;
 
   @column()
+  public dependency: string;
+  @column()
+  public subdependency: string;
+
+  @column()
   public id_type: string;
   @column()
   public id_number: string;

@@ -197,7 +197,7 @@ export default class RolesController {
       if (token) tmpToken = token;
 
       const auditTrail = new AuditTrail(tmpToken, role.audit_trail);
-      auditTrail.update("Administrador", newData, role);
+      auditTrail.update(newData, role);
 
       // Updating data
       try {

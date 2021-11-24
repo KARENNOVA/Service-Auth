@@ -34,7 +34,7 @@ export const changeStatus = async (
 
     if (action === "activate") data.status = 1;
 
-    auditTrail.update("Administrador", { status: data.status }, data);
+    auditTrail.update({ status: data.status }, data);
     const tmpModel = await data.save();
 
     return { success: true, results: tmpModel };

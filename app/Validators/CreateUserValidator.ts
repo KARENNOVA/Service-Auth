@@ -46,6 +46,10 @@ export default class CreateUserValidator {
       cellphone_number: schema.number(),
       phone_number: schema.number(),
       gender: schema.string({ trim: true }),
+      society_type: schema.string({ trim: true }),
+      entity_type: schema.string({ trim: true }),
+      dependency: schema.string.optional({ trim: true }),
+      subdependency: schema.string.optional({ trim: true }),
     }),
   });
 

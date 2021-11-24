@@ -5,7 +5,7 @@ import { getDataUser } from "../functions";
 import { IUpdatedValues } from "../interfaces";
 
 export default class AuditTrail {
-  private dataUser: DetailsUser | undefined;
+  private dataUser: DetailsUser;
   protected token: string;
   protected createdBy: string;
   protected createdOn: number;
@@ -15,7 +15,6 @@ export default class AuditTrail {
 
   constructor(token: string, auditTrail?: any) {
     this.token = token;
-    this.init();
 
     if (auditTrail) {
       this.createdBy = auditTrail.created_by;
@@ -26,18 +25,17 @@ export default class AuditTrail {
     }
   }
 
-  init() {
+  async init() {
     const self = this;
-    getDataUser(self.token).then((detailsUser) => {
-      if (typeof detailsUser !== "undefined") {
-        self.dataUser = detailsUser;
-        self.createdBy = `${self.dataUser.names.firstName} ${self.dataUser.surnames.firstSurname}`;
-        self.createdOn = moment().valueOf();
-        self.updatedBy = null;
-        self.updatedOn = null;
-        self.updatedValues = null;
-      }
-    });
+    const detailsUser = await getDataUser(self.token);
+
+    if (detailsUser !== undefined) self.dataUser = detailsUser;
+
+    self.createdBy = `${self.dataUser.names.firstName} ${self.dataUser.surnames.firstSurname}`;
+    self.createdOn = moment().valueOf();
+    self.updatedBy = null;
+    self.updatedOn = null;
+    self.updatedValues = null;
   }
 
   // GETTERS AND SETTERS
@@ -98,8 +96,11 @@ export default class AuditTrail {
    */
   public registry() {}
 
-  public update(updatedBy: string, updatedValues: any, model: any) {
-    this.updatedBy = updatedBy;
+  public async update(updatedValues: any, model: any) {
+    const detailsUser = await getDataUser(this.token);
+
+    if (detailsUser !== undefined)
+      this.updatedBy = `${detailsUser.names.firstName} ${detailsUser.surnames.firstSurname}`;
     this.updatedOn = moment().valueOf();
 
     let tmpData: any = { ...model["$attributes"] };

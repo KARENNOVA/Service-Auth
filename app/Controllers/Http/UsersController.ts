@@ -50,6 +50,8 @@ export default class UsersController {
 
     const userId = id ? id : payloadToken.id;
 
+    console.log(userId);
+
     try {
       detailsUser = await DetailsUser.query()
         .from("details_users as du")
@@ -179,6 +181,7 @@ export default class UsersController {
     let tmpToken: string = "";
     if (token) tmpToken = token;
     const auditTrail = new AuditTrail(tmpToken);
+    // await auditTrail.init();
     console.log(auditTrail.getAsJson());
 
     let passwordHashed;
@@ -217,10 +220,13 @@ export default class UsersController {
     auditTrail: AuditTrail
   ) {
     let tmpDetailsUser: IDetailsUser = {
-      society_type: "",
-      entity_type: "",
+      society_type: reqDetailsUser.society_type,
+      entity_type: reqDetailsUser.entity_type,
       politics: false,
       notification: false,
+
+      dependency: reqDetailsUser.dependency,
+      subdependency: reqDetailsUser.subdependency,
 
       id_type: reqDetailsUser.id_type.trim(),
       id_number: reqDetailsUser.id_number,
@@ -255,7 +261,9 @@ export default class UsersController {
    * create
    */
   public async create({ response, request }: HttpContextContract) {
-    const { permits, token } = await getPermitsAndRoles(request, response);
+    const token = getToken(request.headers());
+
+    const { permits } = await getPermitsAndRoles(request, response);
     let flag: boolean = false;
 
     permits?.map((permit) => {
@@ -312,7 +320,7 @@ export default class UsersController {
         };
 
         const auditTrail = new AuditTrail(token, detailsUser.audit_trail);
-        auditTrail.update("Administrador", { ...dataUpdated }, detailsUser);
+        auditTrail.update({ ...dataUpdated }, detailsUser);
         dataUpdated["audit_trail"] = auditTrail.getAsJson();
 
         // Updating data

@@ -18,6 +18,9 @@ export interface IDetailsUser {
   politics?: boolean;
   notification?: boolean;
 
+  dependency: string;
+  subdependency: string;
+
   id_type: string;
   id_number: string;
   names: INames;

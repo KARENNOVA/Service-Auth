@@ -37,4 +37,4 @@ Route.group(() => {
   });
 })
   .prefix(`${apiVersion}/users`)
-  .middleware(["verifyToken", "logRegistered"]);
+  .middleware(["logRegistered"]);

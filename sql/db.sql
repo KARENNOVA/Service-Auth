@@ -1,7 +1,7 @@
 DROP table if EXISTS role_permits cascade;
 DROP table if EXISTS user_permits cascade;
 DROP table if EXISTS user_roles cascade;
-DROP table if EXISTS details_user cascade;
+DROP table if EXISTS details_users cascade;
 DROP table if EXISTS users cascade;
 DROP table if EXISTS permits cascade;
 DROP table if EXISTS roles cascade;
@@ -122,6 +122,10 @@ CREATE table IF NOT EXISTS details_users (
 	entity_type varchar(100) not null,
 	politics boolean not null,
 	notification boolean not null,
+
+	dependency varchar(100) not null,
+	subdependency varchar(100) not null,
+
 
 	id_type varchar(100) not null,
 	id_number varchar(100) UNIQUE not null,
