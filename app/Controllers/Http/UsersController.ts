@@ -10,9 +10,14 @@ import {
 } from "App/Utils/interfaces";
 import CreateUserValidator from "App/Validators/CreateUserValidator";
 import { IUser } from "../../Utils/interfaces/user";
-import { base64encode, getPermitsAndRoles } from "App/Utils/functions";
-import { bcryptEncode } from "../../Utils/functions/auth";
-import { decodeJWT } from "App/Utils/functions/jwt";
+import {
+  base64encode,
+  getPermitsAndRoles,
+  sum,
+  validatePagination,
+} from "App/Utils/functions";
+import { decodeJWT, getToken } from "App/Utils/functions/jwt";
+import { bcryptEncode } from "./../../Utils/functions/auth";
 
 export default class UsersController {
   /**
@@ -67,6 +72,90 @@ export default class UsersController {
       message: "Detalles del Usuario",
       results: { detailsUser, roles, permits },
     });
+  }
+
+  /**
+   * showAll
+   */
+  public async showAll({ response, request }: HttpContextContract) {
+    const { q, page, pageSize } = request.qs();
+    const tmpWith = request.qs().with;
+    const pagination = validatePagination(q, page, pageSize);
+    let results, detailsUser;
+    let count: number =
+      pagination["page"] * pagination["pageSize"] - pagination["pageSize"];
+
+    try {
+      if (tmpWith === "pagination")
+        results = await DetailsUser.query()
+          .from("details_users as du")
+          .innerJoin("status as s", "du.status", "s.id")
+          .select(["du.id as du_id", "*"])
+          .where("du.status", 1)
+          .orderBy("du.id", "desc")
+          .limit(pagination["pageSize"])
+          .offset(count);
+      else
+        results = await DetailsUser.query()
+          .from("details_users as du")
+          .innerJoin("status as s", "du.status", "s.id")
+          .select(["du.id as du_id", "*"])
+          .where("du.status", 1)
+          .orderBy("du.id", "desc");
+
+      results = results === null ? [] : results;
+      let data: any[] = [];
+
+      results.map((realEstate) => {
+        let tmpNewData: any = {
+          ...realEstate["$attributes"],
+          id: realEstate["$extras"]["du_id"],
+          status: realEstate["$extras"]["status_name"],
+        };
+
+        data.push(tmpNewData);
+      });
+
+      // Total Results
+      try {
+        detailsUser = await DetailsUser.query().where("status", 1);
+      } catch (error) {
+        console.error(error);
+        return response.status(500).json({
+          message: "Error al traer la lista de todos los Bienes Inmuebles.",
+        });
+      }
+      const total_results = detailsUser.length;
+
+      // Count
+      count = results.length;
+
+      // Next Page
+      let next_page: number | null =
+        pagination["page"] * pagination["pageSize"] < detailsUser.length
+          ? sum(parseInt(pagination["page"] + ""), 1)
+          : null;
+
+      // Previous Page
+      let previous_page: number | null =
+        pagination["page"] - 1 > 0 ? pagination["page"] - 1 : null;
+
+      const lastElement = data.pop();
+      const res = [lastElement, ...data];
+
+      return response.json({
+        message: "Lista de Usuarios",
+        results: res,
+        page: pagination["page"],
+        count,
+        next_page,
+        previous_page,
+        total_results,
+      });
+    } catch (error) {
+      console.error(error);
+      return response.status(500).json({ message: "Request to Users failed!" });
+    }
   }
 
   public async getRolesAndPermits({ response, request }: HttpContextContract) {
@@ -201,6 +290,77 @@ export default class UsersController {
       return response.status(500).json({
         message: error,
       });
+    }
+  }
+
+  /**
+   * update
+   */
+  public async update({ response, request }: HttpContextContract) {
+    const newData = request.body();
+    const { id } = request.qs();
+    const token = getToken(request.headers());
+
+    delete newData.detailsUser.dependency;
+    delete newData.detailsUser.subdependency;
+
+    try {
+      if (typeof id === "string") {
+        const detailsUser = await DetailsUser.findOrFail(id);
+        let dataUpdated: any = {
+          ...newData.detailsUser,
+        };
+
+        const auditTrail = new AuditTrail(token, detailsUser.audit_trail);
+        auditTrail.update("Administrador", { ...dataUpdated }, detailsUser);
+        dataUpdated["audit_trail"] = auditTrail.getAsJson();
+
+        // Updating data
+        try {
+          await detailsUser
+            .merge({
+              ...dataUpdated,
+            })
+            .save();
+        } catch (error) {
+          console.error(error);
+          return response
+            .status(500)
+            .json({ message: "Error al actualizar: Servidor", error });
+        }
+
+        if (newData.user.password) {
+          const user = await User.findByOrFail(
+            "id_number",
+            detailsUser.id_number
+          );
+
+          // Updating data
+          try {
+            await user
+              .merge({
+                password: await bcryptEncode(newData.user.password),
+                audit_trail: auditTrail.getAsJson(),
+              })
+              .save();
+
+            return response.status(200).json({
+              message: `Usuario ${detailsUser.names.firstName} actualizado satisfactoriamente`,
+              results: detailsUser,
+            });
+          } catch (error) {
+            console.error(error);
+            return response
+              .status(500)
+              .json({ message: "Error al actualizar: Servidor", error });
+          }
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      return response
+        .status(500)
+        .json({ message: "Error interno: Servidor", error });
     }
   }
 }

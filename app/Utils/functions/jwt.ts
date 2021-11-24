@@ -9,3 +9,14 @@ export const decodeJWT = (token: string) => {
     console.error(error);
   }
 };
+
+export const getToken = (headers): string => {
+  let tmpToken: string = "";
+
+  if (headers.authorization) {
+    let tmp = headers.authorization?.split("Bearer ").pop()?.trim();
+    if (typeof tmp !== "undefined") tmpToken = tmp;
+  }
+
+  return tmpToken;
+};

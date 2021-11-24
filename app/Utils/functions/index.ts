@@ -140,5 +140,24 @@ export const getPermitsAndRoles = async (request, response, id?) => {
   }
 };
 
+export const validatePagination = (q?, page?, pageSize?) => {
+  let tmpQ: string, tmpPage: number, tmpPageSize: number;
+
+  if (!q) tmpQ = "";
+  else tmpQ = String(q).toUpperCase().trim();
+
+  if (!pageSize) tmpPageSize = 10;
+  else tmpPageSize = Number(pageSize);
+
+  if (!page) tmpPage = 1;
+  else tmpPage = Number(page);
+
+  return { q: tmpQ, page: tmpPage, pageSize: tmpPageSize };
+};
+
+export const sum = (num1: number, num2: number): number => {
+  return num1 + num2;
+};
+
 export * from "./auth";
 export * from "./permit";

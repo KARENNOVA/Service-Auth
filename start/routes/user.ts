@@ -9,7 +9,8 @@ Route.group(() => {
       "App/Controllers/Http/UsersController"
     );
 
-    return new UsersController().getDataUser(ctx);
+    if (ctx.request.qs().id) return new UsersController().getDataUser(ctx);
+    return new UsersController().showAll(ctx);
   });
 
   Route.get("/roles-and-permits", async (ctx) => {
@@ -26,6 +27,13 @@ Route.group(() => {
       "App/Controllers/Http/UsersController"
     );
     return new UsersController().create(ctx);
+  });
+
+  Route.put("/", async (ctx) => {
+    const { default: UsersController } = await import(
+      "App/Controllers/Http/UsersController"
+    );
+    return new UsersController().update(ctx);
   });
 })
   .prefix(`${apiVersion}/users`)
