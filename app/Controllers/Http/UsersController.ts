@@ -181,13 +181,11 @@ export default class UsersController {
     let tmpToken: string = "";
     if (token) tmpToken = token;
     const auditTrail = new AuditTrail(tmpToken);
-    // await auditTrail.init();
-    console.log(auditTrail.getAsJson());
+    await auditTrail.init();
 
     let passwordHashed;
 
     if (typeof reqDataUser["password"] === "string")
-      // passwordHashed = bcrypt.hashSync(reqDataUser["password"], 10);
       passwordHashed = await bcryptEncode(reqDataUser["password"]);
 
     let newUser: IUser = {
@@ -322,11 +320,11 @@ export default class UsersController {
 
         // Updating data
         try {
-          await detailsUser
-            .merge({
-              ...dataUpdated,
-            })
-            .save();
+          await detailsUser.merge({
+            ...dataUpdated,
+          });
+
+          await detailsUser.save();
         } catch (error) {
           console.error(error);
           return response
