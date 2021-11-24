@@ -309,9 +309,6 @@ export default class UsersController {
     const { id } = request.qs();
     const token = getToken(request.headers());
 
-    delete newData.detailsUser.dependency;
-    delete newData.detailsUser.subdependency;
-
     try {
       if (typeof id === "string") {
         const detailsUser = await DetailsUser.findOrFail(id);
