@@ -19,10 +19,7 @@ import { getToken } from "App/Utils/functions/jwt";
 export default class RolesController {
   public async index({}: HttpContextContract) {}
 
-  public async create(
-    { request, response }: HttpContextContract,
-    token?: string
-  ) {
+  public async create({ request, response }: HttpContextContract) {
     const payload: IPayloadRole = await request.validate(CreateRoleValidator);
     let message: string = "Rol creado correctamente.";
 
@@ -32,10 +29,9 @@ export default class RolesController {
       if (dataRole["permits"]) delete dataRole["permits"];
       dataRole["status"] = 1;
 
-      let tmpToken = "";
-      if (token) tmpToken = token;
+      const token = getToken(request.headers());
 
-      const auditTrail: AuditTrail = new AuditTrail(tmpToken);
+      const auditTrail: AuditTrail = new AuditTrail(token);
       await auditTrail.init();
       dataRole["audit_trail"] = auditTrail.getAsJson();
 

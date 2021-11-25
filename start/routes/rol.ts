@@ -31,10 +31,7 @@ Route.group(() => {
       "App/Controllers/Http/RolesController"
     );
 
-    return new RolesController().create(
-      ctx,
-      ctx.request.headers().authorization
-    );
+    return new RolesController().create(ctx);
   });
 
   Route.post("/assign", async (ctx) => {
