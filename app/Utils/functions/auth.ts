@@ -68,10 +68,9 @@ export const bcryptEncode = async (passwordNaked: string): Promise<string> => {
     const hash = await bcrypt.hash(passwordNaked, saltRounds);
 
     // Store hash in your password DB.
-    console.log(hash);
     return hash;
   } catch (error) {
-    console.log(error);
+    console.error(error);
 
     return Promise.reject("Error hashing the password");
   }

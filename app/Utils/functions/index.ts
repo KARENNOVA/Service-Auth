@@ -104,8 +104,6 @@ export const getPermitsAndRoles = async (request, response, id?) => {
       .innerJoin("permits as p", "up.permit_id", "p.id")
       .where("up.user_id", userId);
 
-    console.log(payloadToken);
-
     userRoles.map((userRole) => {
       roles.push({
         id: userRole["$original"]["role_id"],

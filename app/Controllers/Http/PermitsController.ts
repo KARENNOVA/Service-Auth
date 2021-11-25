@@ -5,6 +5,7 @@ import AuditTrail from "App/Utils/classes/AuditTrail";
 import { messageError } from "App/Utils/functions";
 import { IResponseData } from "../../Utils/interfaces/index";
 import UserPermit from "App/Models/UserPermit";
+import { getToken } from "App/Utils/functions/jwt";
 
 export default class PermitsController {
   public async index({}: HttpContextContract) {}
@@ -14,19 +15,14 @@ export default class PermitsController {
   /**
    * assign
    */
-  public async assign(
-    { request, response }: HttpContextContract,
-    token?: string
-  ) {
+  public async assign({ request, response }: HttpContextContract) {
     const permits = request.body()["permits"];
     const { to } = request.qs();
 
-    let tmpToken: string = "";
-    if (token) tmpToken = token.replace("Bearer ", "");
-    console.log(tmpToken);
+    const token = getToken(request.headers());
 
     try {
-      const auditTrail = new AuditTrail(tmpToken);
+      const auditTrail = new AuditTrail(token);
       await auditTrail.init();
 
       let tmp: any[] = [];
@@ -38,10 +34,13 @@ export default class PermitsController {
           audit_trail: auditTrail.getAsJson(),
         });
       });
-      console.log(tmp);
 
       const results = await UserPermit.createMany(tmp);
-      console.log(results);
+
+      return response.status(200).json({
+        message: "Roles asignados.",
+        results,
+      });
     } catch (error) {
       console.error(error);
       return response.status(500).json({
@@ -66,7 +65,6 @@ export default class PermitsController {
         and rp.rol_id = ${id} 
       group by rp.rol_id, r."name" ;
     `);
-      console.log(permitsByRole);
 
       return response
         .status(200)

@@ -36,7 +36,6 @@ export default class RolesController {
       dataRole["audit_trail"] = auditTrail.getAsJson();
 
       const role = await Role.create({ ...dataRole });
-      console.log(role);
 
       if (payload["permits"].length > 0) {
         const { success } = await assignPermits(
@@ -92,10 +91,12 @@ export default class RolesController {
           audit_trail: auditTrail.getAsJson(),
         });
       });
-      console.log(tmp);
 
       const results = await UserRole.createMany(tmp);
-      console.log(results);
+      return response.status(200).json({
+        message: "Roles asignados.",
+        results,
+      });
     } catch (error) {
       console.error(error);
       return response.status(500).json({
@@ -120,7 +121,6 @@ export default class RolesController {
         .innerJoin("permits as p", "rp.permit_id", "p.id")
         .innerJoin("status as s", "rp.status", "s.id")
         .where("rp.role_id", parseInt(id));
-      console.log(permitsByRole);
 
       // Assign and organized permits in array
       let permits: any[] = [];

@@ -53,8 +53,6 @@ export default class UsersController {
 
     const userId = id ? id : payloadToken.id;
 
-    console.log(userId);
-
     try {
       detailsUser = await DetailsUser.query()
         .from("details_users as du")
@@ -72,7 +70,6 @@ export default class UsersController {
     };
 
     delete detailsUser["user_id"];
-    console.log(detailsUser);
 
     response.status(200).json({
       message: "Detalles del Usuario",
