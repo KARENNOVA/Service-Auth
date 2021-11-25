@@ -14,6 +14,7 @@ import { IResponseData } from "../../Utils/interfaces/index";
 // MODELS
 import UserRole from "App/Models/UserRole";
 import RolePermit from "App/Models/RolePermit";
+import { getToken } from "App/Utils/functions/jwt";
 
 export default class RolesController {
   public async index({}: HttpContextContract) {}
@@ -76,18 +77,14 @@ export default class RolesController {
   /**
    * assign
    */
-  public async assign(
-    { request, response }: HttpContextContract,
-    token?: string
-  ) {
+  public async assign({ request, response }: HttpContextContract) {
     const roles = request.body()["roles"];
     const { to } = request.qs();
 
-    let tmpToken: string = "";
-    if (token) tmpToken = token;
+    const token = getToken(request.headers());
 
     try {
-      const auditTrail = new AuditTrail(tmpToken);
+      const auditTrail = new AuditTrail(token);
       await auditTrail.init();
 
       let tmp: any[] = [];

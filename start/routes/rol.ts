@@ -41,10 +41,7 @@ Route.group(() => {
     const { default: RolesController } = await import(
       "App/Controllers/Http/RolesController"
     );
-    return new RolesController().assign(
-      ctx,
-      ctx.request.headers().authorization
-    );
+    return new RolesController().assign(ctx);
   });
 
   // PUT
