@@ -35,6 +35,7 @@ export default class RolesController {
       if (token) tmpToken = token;
 
       const auditTrail: AuditTrail = new AuditTrail(tmpToken);
+      await auditTrail.init();
       dataRole["audit_trail"] = auditTrail.getAsJson();
 
       const role = await Role.create({ ...dataRole });
@@ -87,6 +88,7 @@ export default class RolesController {
 
     try {
       const auditTrail = new AuditTrail(tmpToken);
+      await auditTrail.init();
 
       let tmp: any[] = [];
       roles.map((role) => {

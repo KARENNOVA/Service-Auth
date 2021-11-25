@@ -27,6 +27,7 @@ export default class PermitsController {
 
     try {
       const auditTrail = new AuditTrail(tmpToken);
+      await auditTrail.init();
 
       let tmp: any[] = [];
       permits.map((permit) => {
