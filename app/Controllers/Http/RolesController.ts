@@ -242,20 +242,16 @@ export default class RolesController {
   /**
    * inactivate
    */
-  public async inactivate(
-    { request, response }: HttpContextContract,
-    token?: string
-  ) {
+  public async inactivate({ request, response }: HttpContextContract) {
     const { id } = request.params();
 
-    let tmpToken: string = "";
-    if (token) tmpToken = token;
+    const token = getToken(request.headers());
 
     const { success, results } = await changeStatus(
       Role,
       id,
       "inactivate",
-      tmpToken
+      token
     );
 
     if (success)

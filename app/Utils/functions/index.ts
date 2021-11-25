@@ -54,6 +54,11 @@ export const messageError = (
   console.error(error.name);
   console.error(error.message);
 
+  // Error 23505 =
+  if (Number(error.code) === 23505)
+    errorData.message =
+      "Error interno controlable. Realice la consulta hasta que le funcione. :)";
+
   errorData.error = { name: error.name, message: error.message };
 
   return response.status(500).json(errorData);
