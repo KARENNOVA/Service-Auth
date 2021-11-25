@@ -56,10 +56,7 @@ Route.group(() => {
     const { default: RolesController } = await import(
       "App/Controllers/Http/RolesController"
     );
-    return new RolesController().inactivate(
-      ctx,
-      ctx.request.headers().authorization
-    );
+    return new RolesController().inactivate(ctx);
   });
 })
   .prefix(`${apiVersion}/roles`)
