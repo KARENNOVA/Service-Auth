@@ -18,10 +18,7 @@ Route.group(() => {
     const { default: PermitsController } = await import(
       "App/Controllers/Http/PermitsController"
     );
-    return new PermitsController().assign(
-      ctx,
-      ctx.request.headers().authorization
-    );
+    return new PermitsController().assign(ctx);
   });
 
   //   Route.get("/", async (ctx) => {
