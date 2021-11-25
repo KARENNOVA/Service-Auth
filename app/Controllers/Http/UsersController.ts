@@ -64,9 +64,33 @@ export default class UsersController {
     } catch (error) {
       console.error(error);
     }
+
+    // let idType: string = "";
+
+    // switch (detailsUser[0]["$attributes"]["id_type"]) {
+    //   case "1":
+    //     idType = "Cédula de Ciudadanía";
+    //     break;
+
+    //   case "2":
+    //     idType = "Tarjeta de Identidad";
+    //     break;
+
+    //   case "3":
+    //     idType = "Cédula de Extranjería";
+    //     break;
+    //   case "4":
+    //     idType = "NIT";
+    //     break;
+
+    //   default:
+    //     break;
+    // }
+
     detailsUser = {
       ...detailsUser[0]["$attributes"],
       id: detailsUser[0]["$extras"]["du_id"],
+      // id_type: idType,
       status: detailsUser[0]["$extras"]["status_name"],
     };
 
