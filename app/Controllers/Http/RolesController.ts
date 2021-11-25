@@ -24,8 +24,9 @@ export default class RolesController {
     let message: string = "Rol creado correctamente.";
 
     try {
-      let dataRole: IRole = { ...payload };
+      let dataRole: IRole = { ...payload, role_name: payload["name"] };
 
+      if (dataRole["name"]) delete dataRole["name"];
       if (dataRole["permits"]) delete dataRole["permits"];
       dataRole["status"] = 1;
 

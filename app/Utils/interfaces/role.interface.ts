@@ -7,7 +7,7 @@ export interface IPayloadRole {
 export interface IRole {
   id?: number;
 
-  name: string;
+  role_name: string;
   permits?: number[];
 
   status?: number;
