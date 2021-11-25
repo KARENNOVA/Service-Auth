@@ -348,11 +348,6 @@ export default class UsersController {
               audit_trail: auditTrail.getAsJson(),
             });
             await user.save();
-
-            return response.status(200).json({
-              message: `Usuario ${detailsUser.names.firstName} actualizado satisfactoriamente`,
-              results: detailsUser,
-            });
           } catch (error) {
             console.error(error);
             return response
@@ -360,6 +355,10 @@ export default class UsersController {
               .json({ message: "Error al actualizar: Servidor", error });
           }
         }
+        return response.status(200).json({
+          message: `Usuario ${detailsUser.names.firstName} actualizado satisfactoriamente`,
+          results: detailsUser,
+        });
       }
     } catch (error) {
       console.error(error);
