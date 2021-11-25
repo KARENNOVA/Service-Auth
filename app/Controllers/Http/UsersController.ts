@@ -65,32 +65,9 @@ export default class UsersController {
       console.error(error);
     }
 
-    // let idType: string = "";
-
-    // switch (detailsUser[0]["$attributes"]["id_type"]) {
-    //   case "1":
-    //     idType = "Cédula de Ciudadanía";
-    //     break;
-
-    //   case "2":
-    //     idType = "Tarjeta de Identidad";
-    //     break;
-
-    //   case "3":
-    //     idType = "Cédula de Extranjería";
-    //     break;
-    //   case "4":
-    //     idType = "NIT";
-    //     break;
-
-    //   default:
-    //     break;
-    // }
-
     detailsUser = {
       ...detailsUser[0]["$attributes"],
       id: detailsUser[0]["$extras"]["du_id"],
-      // id_type: idType,
       status: detailsUser[0]["$extras"]["status_name"],
     };
 
@@ -398,11 +375,11 @@ export default class UsersController {
   public async inactivate({ request, response }: HttpContextContract) {
     const token = getToken(request.headers());
     const { id } = request.qs();
-    let user: User, detailsUser: DetailsUser;
+    // let user: User, detailsUser: DetailsUser;
 
     try {
-      user = await User.findOrFail(id);
-      detailsUser = await DetailsUser.findOrFail(id);
+      await User.findOrFail(id);
+      await DetailsUser.findOrFail(id);
     } catch (error) {
       return response.status(400).json({
         message: `El id [${id}] de usuario no existe, verificar si se encuentra creado.`,
@@ -410,7 +387,7 @@ export default class UsersController {
     }
 
     const { success, results } = await changeStatus(
-      user,
+      User,
       id,
       "inactivate",
       token
@@ -418,7 +395,7 @@ export default class UsersController {
 
     if (success) {
       const { success, results } = await changeStatus(
-        detailsUser,
+        DetailsUser,
         id,
         "inactivate",
         token
