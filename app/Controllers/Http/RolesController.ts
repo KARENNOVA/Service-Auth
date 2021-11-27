@@ -146,11 +146,17 @@ export default class RolesController {
       return response.status(200).json(dataResponse);
     } catch (error) {
       console.error(error);
-      return response.status(500).json({
-        message:
-          "Ha ocurrido un error inesperado al obtener los valores.\nRevisar Terminal.",
-      });
+      const role = await Role.find(id);
+
+      if (role !== null)
+        dataResponse["results"] = { name: role["role_name"], permits: [] };
+      else
+        return response.status(500).json({
+          message:
+            "Ha ocurrido un error inesperado al obtener los valores.\nRevisar Terminal.",
+        });
     }
+    return response.status(200).json(dataResponse);
   }
 
   public async showAll({ response }: HttpContextContract) {
