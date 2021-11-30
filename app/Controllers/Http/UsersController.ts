@@ -81,7 +81,7 @@ export default class UsersController {
    * showAll
    */
   public async showAll({ response, request }: HttpContextContract) {
-    const { q, page, pageSize } = request.qs();
+    const { q, page, pageSize, to } = request.qs();
     const tmpWith = request.qs().with;
     const pagination = validatePagination(q, page, pageSize);
     let results, detailsUser;
@@ -106,6 +106,21 @@ export default class UsersController {
           .where("du.status", 1)
           .orderBy("du.id", "desc");
 
+      if (to && to === "origin")
+        try {
+          results = await DetailsUser.query()
+            .from("details_users as du")
+            .innerJoin("status as s", "du.status", "s.id")
+            .innerJoin("users as u", "du.user_id", "u.id")
+            .select(["du.id as du_id", "*"])
+            .where("du.status", 1)
+            .orderBy("du.id", "desc");
+
+          console.log(results);
+        } catch (error) {
+          console.error(error);
+        }
+
       results = results === null ? [] : results;
       let data: any[] = [];
 
@@ -116,7 +131,9 @@ export default class UsersController {
           status: realEstate["$extras"]["status_name"],
         };
 
-        data.push(tmpNewData);
+        if (!to) data.push(tmpNewData);
+        if (to && to === "origin" && realEstate["$extras"]["password"] === null)
+          data.push(tmpNewData);
       });
 
       // Total Results

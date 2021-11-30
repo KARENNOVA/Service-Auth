@@ -10,6 +10,7 @@ Route.group(() => {
     );
 
     if (ctx.request.qs().id) return new UsersController().getDataUser(ctx);
+
     return new UsersController().showAll(ctx);
   });
 
