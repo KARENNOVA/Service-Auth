@@ -9,7 +9,13 @@ Route.group(() => {
       "App/Controllers/Http/UsersController"
     );
 
-    if (ctx.request.qs().id) return new UsersController().getDataUser(ctx);
+    return new UsersController().getDataUser(ctx);
+  });
+
+  Route.get("/list", async (ctx) => {
+    const { default: UsersController } = await import(
+      "App/Controllers/Http/UsersController"
+    );
 
     return new UsersController().showAll(ctx);
   });
@@ -35,6 +41,13 @@ Route.group(() => {
       "App/Controllers/Http/UsersController"
     );
     return new UsersController().update(ctx);
+  });
+
+  Route.put("/password", async (ctx) => {
+    const { default: UsersController } = await import(
+      "App/Controllers/Http/UsersController"
+    );
+    return new UsersController().updatePassword(ctx);
   });
 
   Route.delete("/", async (ctx) => {

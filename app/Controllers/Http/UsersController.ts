@@ -14,9 +14,10 @@ import { IUser } from "../../Utils/interfaces/user";
 import {
   base64encode,
   getPermitsAndRoles,
-  // hasPermit,
+  hasPermit,
   sum,
   validatePagination,
+  validatePermit,
 } from "App/Utils/functions";
 import { decodeJWT, getToken } from "App/Utils/functions/jwt";
 import { bcryptEncode } from "./../../Utils/functions/auth";
@@ -24,13 +25,17 @@ import { changeStatus } from "./../../Utils/functions/index";
 import UserRole from "./../../Models/UserRole";
 import UserPermit from "./../../Models/UserPermit";
 import { IResponseData } from "App/Utils/interfaces/index";
+import { Permit } from "App/Utils/types/enums";
 
 export default class UsersController {
   /**
    * getDataUser
    */
   public async getDataUser({ response, request }: HttpContextContract) {
-    let responseData: IResponseData = { message: "Detalles del Usuario " };
+    let responseData: IResponseData = {
+      message: "Detalles del Usuario ",
+      status: 200,
+    };
 
     const { token } = getToken(request.headers());
     let payloadToken: IDataToken = decodeJWT(token);
@@ -39,16 +44,25 @@ export default class UsersController {
 
     let detailsUsers: DetailsUser[], detailsUser;
 
+    const permitsAnsRolesPetitioner = await getPermitsAndRoles(
+      request,
+      response,
+      payloadToken.id
+    );
+
+    const boolHasPermit = hasPermit(
+      permitsAnsRolesPetitioner.permits,
+      "detalles_Usuarios"
+    );
+
+    if (!boolHasPermit) {
+      responseData["message"] =
+        "No posee el permiso para ver el detalle del usuario.";
+      responseData["error"] = true;
+      return response.status(400).json(responseData);
+    }
+
     const { roles, permits } = await getPermitsAndRoles(request, response, id);
-
-    // const boolHasPermit = hasPermit(permits, "detalles_Usuarios");
-
-    // if (!boolHasPermit) {
-    //   responseData["message"] =
-    //     "No posee el permiso para ver el detalle del usuario.";
-    //   responseData["error"] = true;
-    //   return response.status(400).json(responseData);
-    // }
 
     const userId = id ? id : payloadToken["id"];
     console.log(userId);
@@ -389,6 +403,47 @@ export default class UsersController {
         .status(500)
         .json({ message: "Error interno: Servidor", error });
     }
+  }
+
+  /**
+   * updatePassword
+   */
+  public async updatePassword({ response, request }: HttpContextContract) {
+    let responseData: IResponseData = {
+      message: "Contraseña actualizada.",
+      status: 200,
+    };
+    const { token } = getToken(request.headers());
+
+    const hasPermit = await validatePermit(
+      response,
+      request,
+      token,
+      Permit.CREATE_USER
+    );
+
+    if (!hasPermit) {
+      responseData["message"] =
+        "No posee el permiso para ver el detalle del usuario.";
+      responseData["error"] = true;
+      return response.status(400).json(responseData);
+    }
+
+    const newPassword = request.body()["password"];
+    const { id } = request.qs();
+
+    try {
+      const user: User = await User.findOrFail(id);
+      const newUser = await user.merge({ password: newPassword }).save();
+      responseData["results"] = newUser["$attributes"];
+    } catch (error) {
+      console.error(error);
+      responseData["message"] =
+        "Error inesperado al obtener la información del usuario.";
+      responseData["status"] = 500;
+    }
+
+    return response.status(responseData["status"]).json(responseData);
   }
 
   /**

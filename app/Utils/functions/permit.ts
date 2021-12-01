@@ -1,6 +1,8 @@
 import RolPermit from "App/Models/RolePermit";
 import UserPermit from "App/Models/UserPermit";
+import { getPermitsAndRoles, hasPermit, messageError } from ".";
 import AuditTrail from "../classes/AuditTrail";
+import { decodeJWT } from "./jwt";
 
 export const assignPermits = async (
   permits: number[],
@@ -29,4 +31,31 @@ export const assignPermits = async (
 
     return { success: false };
   }
+};
+
+export const validatePermit = async (
+  response,
+  request,
+  token: string,
+  permitToValidate: string
+): Promise<boolean> => {
+  const payloadToken = decodeJWT(token);
+
+  const { permits } = await getPermitsAndRoles(
+    request,
+    response,
+    payloadToken.id
+  );
+
+  const boolHasPermit = hasPermit(permits, permitToValidate);
+
+  if (!boolHasPermit) {
+    messageError(
+      undefined,
+      response,
+      "No posee el permiso para ver el detalle del usuario."
+    );
+  }
+
+  return boolHasPermit;
 };

@@ -45,23 +45,26 @@ export const changeStatus = async (
 };
 
 export const messageError = (
-  error: any,
+  error: any = {
+    name: "Desconocido",
+    message: "Error desconocido.\nRevisar Terminal.",
+  },
   response: any,
   initialMessage: string = "Ha ocurrido un error inesperado"
 ) => {
-  let errorData: IResponseData = { message: initialMessage };
+  let responseData: IResponseData = { message: initialMessage, status: 500 };
   console.error(error);
   console.error(error.name);
   console.error(error.message);
 
-  // Error 23505 =
+  // Error 23505
   if (Number(error.code) === 23505)
-    errorData.message =
+    responseData.message =
       "Error interno controlable. Realice la consulta hasta que le funcione. :)";
 
-  errorData.error = { name: error.name, message: error.message };
+  responseData.error = { name: error.name, message: error.message };
 
-  return response.status(500).json(errorData);
+  return response.status(responseData["status"]).json(responseData);
 };
 
 export const getDataUser = async (token: string) => {
@@ -148,7 +151,6 @@ export const hasPermit = (permits: any[], permitToValidate: string) => {
     (permit) => permit["name"] === permitToValidate
   );
 
-  console.log(permitsValidated);
   if (permitsValidated.length === 0) return false;
 
   return true;
