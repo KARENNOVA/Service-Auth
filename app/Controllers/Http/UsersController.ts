@@ -25,7 +25,7 @@ import { changeStatus } from "./../../Utils/functions/index";
 import UserRole from "./../../Models/UserRole";
 import UserPermit from "./../../Models/UserPermit";
 import { IResponseData } from "App/Utils/interfaces/index";
-import { Permit } from "App/Utils/types/enums";
+import { Permit } from "App/Utils/types";
 
 export default class UsersController {
   /**
