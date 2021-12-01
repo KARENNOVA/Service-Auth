@@ -7,6 +7,7 @@ import { decodeJWT } from "App/Utils/functions/jwt";
 import DetailsUser from "App/Models/DetailsUser";
 import UserRole from "App/Models/UserRole";
 import UserPermit from "App/Models/UserPermit";
+import { Action } from "../_types";
 
 export const changeStatus = async (
   model: any,
