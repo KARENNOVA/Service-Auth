@@ -12,6 +12,7 @@ export default class VerifyToken {
     let responseData: IResponseData = {
       message: "Debe de ingresar para realizar esta acción.",
       error: true,
+      status: 200,
     };
     const { token } = getToken(request.headers());
 

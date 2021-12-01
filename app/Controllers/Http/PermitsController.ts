@@ -80,7 +80,10 @@ export default class PermitsController {
   }
 
   public async showAll({ response }: HttpContextContract) {
-    let dataResponse: IResponseData = { message: "Todos los permisos" };
+    let dataResponse: IResponseData = {
+      message: "Todos los permisos",
+      status: 200,
+    };
 
     try {
       const permits = await Permit.query()

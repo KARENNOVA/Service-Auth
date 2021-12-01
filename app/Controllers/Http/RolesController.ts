@@ -113,6 +113,7 @@ export default class RolesController {
     const { id } = request.qs();
     let dataResponse: IResponseData = {
       message: "Información detallada del rol ",
+      status: 200,
     };
 
     try {
@@ -160,7 +161,10 @@ export default class RolesController {
   }
 
   public async showAll({ response }: HttpContextContract) {
-    let dataResponse: IResponseData = { message: "Todos los roles." };
+    let dataResponse: IResponseData = {
+      message: "Todos los roles.",
+      status: 200,
+    };
 
     try {
       const roles = await Role.query().where("status", 1).orderBy("id", "desc");
@@ -188,6 +192,7 @@ export default class RolesController {
     const { id } = request.qs();
     let responseData: IResponseData = {
       message: "Rol actualizado correctamente.",
+      status: 200,
     };
     let newData: any = { ...payload };
     if (newData.permits) delete newData.permits;
