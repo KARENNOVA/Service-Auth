@@ -30,7 +30,7 @@ export default class RolesController {
       if (dataRole["permits"]) delete dataRole["permits"];
       dataRole["status"] = 1;
 
-      const token = getToken(request.headers());
+      const { token } = getToken(request.headers());
 
       const auditTrail: AuditTrail = new AuditTrail(token);
       await auditTrail.init();
@@ -77,7 +77,7 @@ export default class RolesController {
     const roles = request.body()["roles"];
     const { to } = request.qs();
 
-    const token = getToken(request.headers());
+    const { token } = getToken(request.headers());
 
     try {
       const auditTrail = new AuditTrail(token);
@@ -251,7 +251,7 @@ export default class RolesController {
   public async inactivate({ request, response }: HttpContextContract) {
     const { id } = request.params();
 
-    const token = getToken(request.headers());
+    const { token } = getToken(request.headers());
 
     const { success, results } = await changeStatus(
       Role,
