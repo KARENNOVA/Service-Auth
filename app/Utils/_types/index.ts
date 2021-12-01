@@ -1,3 +1,5 @@
+export type Action = "inactivate" | "activate";
+
 export enum Permit {
   CREATE_USER = "crear_Usuarios",
   DETAIL_USER = "detalles_Usuarios",
