@@ -19,7 +19,7 @@ export default class PermitsController {
     const permits = request.body()["permits"];
     const { to } = request.qs();
 
-    const token = getToken(request.headers());
+    const { token } = getToken(request.headers());
 
     try {
       const auditTrail = new AuditTrail(token);
