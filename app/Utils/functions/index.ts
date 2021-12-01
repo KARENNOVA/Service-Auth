@@ -139,8 +139,19 @@ export const getPermitsAndRoles = async (request, response, id?) => {
     response.unauthorized({
       error: "No tiene los permisos para realizar esta acción.",
     });
-    return {};
+    return { permits: [], roles: [], token: "" };
   }
+};
+
+export const hasPermit = (permits: any[], permitToValidate: string) => {
+  const permitsValidated = permits.filter(
+    (permit) => permit["name"] === permitToValidate
+  );
+
+  console.log(permitsValidated);
+  if (permitsValidated.length === 0) return false;
+
+  return true;
 };
 
 export const validatePagination = (q?, page?, pageSize?) => {

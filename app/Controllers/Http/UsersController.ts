@@ -4,6 +4,7 @@ import DetailsUser from "App/Models/DetailsUser";
 import User from "App/Models/User";
 import AuditTrail from "App/Utils/classes/AuditTrail";
 import {
+  IDataToken,
   IDataUserPayload,
   IDetailsUser,
   IUserPayload,
@@ -13,6 +14,7 @@ import { IUser } from "../../Utils/interfaces/user";
 import {
   base64encode,
   getPermitsAndRoles,
+  // hasPermit,
   sum,
   validatePagination,
 } from "App/Utils/functions";
@@ -21,60 +23,64 @@ import { bcryptEncode } from "./../../Utils/functions/auth";
 import { changeStatus } from "./../../Utils/functions/index";
 import UserRole from "./../../Models/UserRole";
 import UserPermit from "./../../Models/UserPermit";
+import { IResponseData } from "App/Utils/interfaces/index";
 
 export default class UsersController {
   /**
    * getDataUser
    */
   public async getDataUser({ response, request }: HttpContextContract) {
+    let responseData: IResponseData = { message: "Detalles del Usuario " };
+
+    const { token } = getToken(request.headers());
+    let payloadToken: IDataToken = decodeJWT(token);
+
     const { id } = request.qs();
 
-    let detailsUser;
-    let payloadToken;
-    const token = request
-      .headers()
-      ["authorization"]?.split("Bearer")
-      .pop()
-      ?.trim();
-    if (token) payloadToken = decodeJWT(token);
+    let detailsUsers: DetailsUser[], detailsUser;
 
     const { roles, permits } = await getPermitsAndRoles(request, response, id);
 
-    // let flag: boolean = false;
+    // const boolHasPermit = hasPermit(permits, "detalles_Usuarios");
 
-    // permits?.map((permit) => {
-    //   if (permit.name === "detalles_Usuarios") flag = true;
-    // });
+    // if (!boolHasPermit) {
+    //   responseData["message"] =
+    //     "No posee el permiso para ver el detalle del usuario.";
+    //   responseData["error"] = true;
+    //   return response.status(400).json(responseData);
+    // }
 
-    // if (!flag)
-    //   return response
-    //     .status(403)
-    //     .json({ message: "No posee los permisos para ver un Usuario." });
-
-    const userId = id ? id : payloadToken.id;
+    const userId = id ? id : payloadToken["id"];
+    console.log(userId);
 
     try {
-      detailsUser = await DetailsUser.query()
+      detailsUsers = await DetailsUser.query()
         .from("details_users as du")
         .innerJoin("status as s", "du.status", "s.id")
         .select(["du.id as du_id", "*"])
         .where("user_id", userId);
     } catch (error) {
       console.error(error);
+      responseData["message"] =
+        "Error inesperado al obtener el detalle del usuario.\nRevisar Terminal.";
+      responseData["error"] = true;
+      return response.status(500).json(responseData);
     }
 
     detailsUser = {
-      ...detailsUser[0]["$attributes"],
-      id: detailsUser[0]["$extras"]["du_id"],
-      status: detailsUser[0]["$extras"]["status_name"],
+      ...detailsUsers[0]["$attributes"],
+      id: detailsUsers[0]["$extras"]["du_id"],
+      status: detailsUsers[0]["$extras"]["status_name"],
     };
 
     delete detailsUser["user_id"];
 
-    response.status(200).json({
-      message: "Detalles del Usuario",
-      results: { detailsUser, roles, permits },
-    });
+    responseData[
+      "message"
+    ] += `${detailsUser["names"]["firstName"]} ${detailsUser["surnames"]["firstSurname"]}`;
+    responseData["results"] = { detailsUser, roles, permits };
+
+    return response.status(200).json(responseData);
   }
 
   /**
@@ -93,7 +99,7 @@ export default class UsersController {
         results = await DetailsUser.query()
           .from("details_users as du")
           .innerJoin("status as s", "du.status", "s.id")
-          .select(["du.id as du_id", "*"])
+          .select(["du.user_id as du_id", "*"])
           .where("du.status", 1)
           .orderBy("du.id", "desc")
           .limit(pagination["pageSize"])
@@ -102,7 +108,7 @@ export default class UsersController {
         results = await DetailsUser.query()
           .from("details_users as du")
           .innerJoin("status as s", "du.status", "s.id")
-          .select(["du.id as du_id", "*"])
+          .select(["du.user_id as du_id", "*"])
           .where("du.status", 1)
           .orderBy("du.id", "desc");
 
@@ -112,7 +118,7 @@ export default class UsersController {
             .from("details_users as du")
             .innerJoin("status as s", "du.status", "s.id")
             .innerJoin("users as u", "du.user_id", "u.id")
-            .select(["du.id as du_id", "*"])
+            .select(["du.user_id as du_id", "*"])
             .where("du.status", 1)
             .orderBy("du.id", "desc");
 
@@ -124,15 +130,17 @@ export default class UsersController {
       results = results === null ? [] : results;
       let data: any[] = [];
 
-      results.map((realEstate) => {
+      results.map((user) => {
+        console.log(user);
+
         let tmpNewData: any = {
-          ...realEstate["$attributes"],
-          id: realEstate["$extras"]["du_id"],
-          status: realEstate["$extras"]["status_name"],
+          ...user["$attributes"],
+          id: user["$extras"]["du_id"],
+          status: user["$extras"]["status_name"],
         };
 
         if (!to) data.push(tmpNewData);
-        if (to && to === "origin" && realEstate["$extras"]["password"] === null)
+        if (to && to === "origin" && user["$extras"]["password"] === null)
           data.push(tmpNewData);
       });
 
@@ -277,7 +285,7 @@ export default class UsersController {
    * create
    */
   public async create({ response, request }: HttpContextContract) {
-    const token = getToken(request.headers());
+    const { token } = getToken(request.headers());
 
     const { permits } = await getPermitsAndRoles(request, response);
     let flag: boolean = false;
@@ -323,7 +331,7 @@ export default class UsersController {
   public async update({ response, request }: HttpContextContract) {
     const newData = request.body();
     const { id } = request.qs();
-    const token = getToken(request.headers());
+    const { token } = getToken(request.headers());
 
     try {
       if (typeof id === "string") {
@@ -387,7 +395,7 @@ export default class UsersController {
    * inactivate
    */
   public async inactivate({ request, response }: HttpContextContract) {
-    const token = getToken(request.headers());
+    const { token } = getToken(request.headers());
     const { id } = request.qs();
     // let user: User, detailsUser: DetailsUser;
 

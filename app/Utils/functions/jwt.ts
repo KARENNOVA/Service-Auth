@@ -1,22 +1,25 @@
 import jwt from "jsonwebtoken";
 import Env from "@ioc:Adonis/Core/Env";
+import { IDataToken } from "../interfaces";
 
-export const decodeJWT = (token: string) => {
+export const decodeJWT = (token: string): IDataToken => {
   try {
-    let payload = jwt.verify(token, Env.get("APP_KEY") || "secret");
-    return payload;
+    return jwt.verify(token, Env.get("APP_KEY") || "secret");
   } catch (error) {
     console.error(error);
+    return { id: -1, iat: -1 };
   }
 };
 
-export const getToken = (headers): string => {
-  let tmpToken: string = "";
+export const getToken = (
+  headers
+): { token: string; headerAuthorization: string } => {
+  let token: string = "";
+  let headerAuthorization = headers.authorization ? headers.authorization : "";
 
-  if (headers.authorization) {
-    let tmp = headers.authorization?.split("Bearer ").pop()?.trim();
-    if (typeof tmp !== "undefined") tmpToken = tmp;
+  if (headerAuthorization !== "") {
+    token = headerAuthorization.replace("Bearer ", "").trim();
   }
 
-  return tmpToken;
+  return { token, headerAuthorization };
 };

@@ -78,10 +78,12 @@ export default class AuthController {
 
       const boolPass = await bcryptCompare(password64, user[0].password);
 
+      console.log(boolPass);
+
       if (boolPass) {
         var token = jwt.sign(
           {
-            id: user[0].id,
+            id: user[0]["$attributes"].id,
             // exp: Math.floor(Date.now() / 1000) + (60 * 60),
           },
           Env.get("APP_KEY") || "secret"

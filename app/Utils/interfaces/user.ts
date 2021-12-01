@@ -41,3 +41,8 @@ export interface IUserPayload {
   user: IDataUserPayload;
   detailsUser: IDataDetailsUserPayload;
 }
+
+export interface IDataUser {
+  id: number;
+  name: string;
+}

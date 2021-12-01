@@ -1,28 +1,35 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import User from "App/Models/User";
-import { decodeJWT } from "App/Utils/functions/jwt";
+import { decodeJWT, getToken } from "App/Utils/functions/jwt";
+import { IDataToken } from "App/Utils/interfaces";
+import { IResponseData } from "App/Utils/interfaces/index";
 
 export default class VerifyToken {
   public async handle(
     { request, response }: HttpContextContract,
     next: () => Promise<void>
   ) {
-    let payload;
-    const token = request
-      .headers()
-      ["authorization"]?.split("Bearer")
-      .pop()
-      ?.trim();
-    if (token) payload = decodeJWT(token);
+    let responseData: IResponseData = {
+      message: "Debe de ingresar para realizar esta acción.",
+      error: true,
+    };
+    const { token } = getToken(request.headers());
 
-    // Consulting
+    // Get data of Token
+    let payload: IDataToken = { id: -1, iat: -1 };
+    if (token !== "") payload = decodeJWT(token);
+
+    if (token === "" || (payload["iat"] === -1 && payload["id"] === -1)) {
+      return response.unauthorized(responseData);
+    }
+
+    // Validating ID User | SABI
     try {
-      User.findOrFail(payload.id);
+      await User.findOrFail(payload.id);
     } catch (error) {
       console.error(error);
-      response.unauthorized({
-        error: "Debe de ingresar para realizar esta acción",
-      });
+      responseData["message"] = "ID del Usuario no existe.";
+      return response.status(500).json(responseData);
     }
 
     await next();

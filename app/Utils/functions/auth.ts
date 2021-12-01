@@ -78,9 +78,7 @@ export const bcryptEncode = async (passwordNaked: string): Promise<string> => {
 
 export const bcryptCompare = async (password, hash) => {
   try {
-    const flag = bcrypt.compare(password, hash);
-
-    return flag;
+    return bcrypt.compare(password, hash);
   } catch (error) {
     console.error(error);
     return false;
