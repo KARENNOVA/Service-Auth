@@ -15,6 +15,7 @@ import {
   base64encode,
   getPermitsAndRoles,
   hasPermit,
+  messageError,
   sum,
   validatePagination,
   validatePermit,
@@ -181,6 +182,8 @@ export default class UsersController {
       // Previous Page
       let previous_page: number | null =
         pagination["page"] - 1 > 0 ? pagination["page"] - 1 : null;
+
+      data = data.sort((a, b) => b.id - a.id);
 
       const lastElement = data.pop();
       const res = [lastElement, ...data];
@@ -419,14 +422,15 @@ export default class UsersController {
       response,
       request,
       token,
-      Permit.CREATE_USER
+      Permit.UPDATE_USER
     );
 
     if (!hasPermit) {
-      responseData["message"] =
-        "No posee el permiso para ver el detalle del usuario.";
-      responseData["error"] = true;
-      return response.status(400).json(responseData);
+      messageError(
+        undefined,
+        response,
+        `No posee el permiso (${Permit.UPDATE_USER}) para ver el detalle del usuario.`
+      );
     }
 
     const newPassword = request.body()["password"];
