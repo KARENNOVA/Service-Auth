@@ -1,11 +1,14 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Database from "@ioc:Adonis/Lucid/Database";
-import Permit from "App/Models/Permit";
-import AuditTrail from "App/Utils/classes/AuditTrail";
-import { messageError } from "App/Utils/functions";
-import { IResponseData } from "../../Utils/interfaces/index";
+import PermitModel from "App/Models/Permit";
 import UserPermit from "App/Models/UserPermit";
-import { getToken } from "App/Utils/functions/jwt";
+
+// UTILS
+import { IResponseData, IUserPermit } from "App/Utils/interfaces";
+import { messageError, validatePermit } from "App/Utils/functions";
+import { getToken } from "App/Utils/functions";
+import AuditTrail from "App/Utils/classes/AuditTrail";
+import { Permit } from "App/Utils/_types";
 
 export default class PermitsController {
   public async index({}: HttpContextContract) {}
@@ -13,21 +16,52 @@ export default class PermitsController {
   public async create({}: HttpContextContract) {}
 
   /**
-   * assign
+   * Assign permits to one User by ID User
    */
   public async assign({ request, response }: HttpContextContract) {
-    const permits = request.body()["permits"];
-    const { to } = request.qs();
-
+    // Validations
     const { token } = getToken(request.headers());
 
-    try {
-      const auditTrail = new AuditTrail(token);
-      await auditTrail.init();
+    const hasPermit = await validatePermit(
+      response,
+      request,
+      token,
+      Permit.ASSIGN_ROLEPERMIT
+    );
 
-      let tmp: any[] = [];
+    if (!hasPermit) {
+      return messageError(
+        undefined,
+        response,
+        `No posee el permiso (${Permit.ASSIGN_ROLEPERMIT}) para asignar permisos.`,
+        401
+      );
+    }
+
+    const { to } = request.qs();
+
+    if (!to)
+      return messageError(
+        undefined,
+        response,
+        "Ingrese el ID del usuario. [ to ]",
+        400
+      );
+    // END Validations
+
+    let responseData: IResponseData = {
+      message: `Permisos asignados al usuario con ID: ${to}`,
+      status: 200,
+    };
+    const permits = request.body()["permits"];
+
+    const auditTrail = new AuditTrail(token);
+    await auditTrail.init();
+
+    try {
+      let dataToInsert: IUserPermit[] = [];
       permits.map((permit) => {
-        tmp.push({
+        dataToInsert.push({
           user_id: to,
           permit_id: permit,
           status: 1,
@@ -35,18 +69,17 @@ export default class PermitsController {
         });
       });
 
-      const results = await UserPermit.createMany(tmp);
+      const results = await UserPermit.createMany(dataToInsert);
 
-      return response.status(200).json({
-        message: "Roles asignados.",
-        results,
-      });
+      responseData["results"] = results;
+
+      return response.status(responseData["status"]).json(responseData);
     } catch (error) {
-      console.error(error);
-      return response.status(500).json({
-        message:
-          "Ha ocurrido un error inesperado al asignar los Permisos.\nRevisar Terminal.",
-      });
+      return messageError(
+        error,
+        response,
+        "Ha ocurrido un error inesperado al asignar los Permisos.\nRevisar Terminal."
+      );
     }
   }
 
@@ -86,12 +119,13 @@ export default class PermitsController {
     };
 
     try {
-      const permits = await Permit.query()
+      const permits = await PermitModel.query()
+        .select(["id", "permit_name"])
         .where("status", 1)
         .orderBy("id", "asc");
 
       dataResponse["results"] = permits;
-      dataResponse["total"] = permits.length;
+      dataResponse["total_results"] = permits.length;
       return response.status(200).json(dataResponse);
     } catch (error) {
       return messageError(

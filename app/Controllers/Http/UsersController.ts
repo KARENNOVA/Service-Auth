@@ -66,7 +66,6 @@ export default class UsersController {
     const { roles, permits } = await getPermitsAndRoles(request, response, id);
 
     const userId = id ? id : payloadToken["id"];
-    console.log(userId);
 
     try {
       detailsUsers = await DetailsUser.query()
@@ -136,8 +135,6 @@ export default class UsersController {
             .select(["du.user_id as du_id", "*"])
             .where("du.status", 1)
             .orderBy("du.id", "desc");
-
-          console.log(results);
         } catch (error) {
           console.error(error);
         }
@@ -146,8 +143,6 @@ export default class UsersController {
       let data: any[] = [];
 
       results.map((user) => {
-        console.log(user);
-
         let tmpNewData: any = {
           ...user["$attributes"],
           id: user["$extras"]["du_id"],
@@ -412,10 +407,6 @@ export default class UsersController {
    * updatePassword
    */
   public async updatePassword({ response, request }: HttpContextContract) {
-    let responseData: IResponseData = {
-      message: "Contraseña actualizada.",
-      status: 200,
-    };
     const { token } = getToken(request.headers());
 
     const hasPermit = await validatePermit(
@@ -426,12 +417,17 @@ export default class UsersController {
     );
 
     if (!hasPermit) {
-      messageError(
+      return messageError(
         undefined,
         response,
         `No posee el permiso (${Permit.UPDATE_USER}) para ver el detalle del usuario.`
       );
     }
+
+    let responseData: IResponseData = {
+      message: "Contraseña actualizada.",
+      status: 200,
+    };
 
     const newPassword = request.body()["password"];
     const { id } = request.qs();

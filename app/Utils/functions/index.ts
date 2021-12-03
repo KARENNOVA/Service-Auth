@@ -51,20 +51,35 @@ export const messageError = (
     message: "Error desconocido.\nRevisar Terminal.",
   },
   response: any,
-  initialMessage: string = "Ha ocurrido un error inesperado"
+  initialMessage: string = "Ha ocurrido un error inesperado",
+  initialStatus: number = 500
 ) => {
-  let responseData: IResponseData = { message: initialMessage, status: 500 };
-  console.error(error);
-  console.error(error.name);
-  console.error(error.message);
+  let responseData: IResponseData = {
+    message: initialMessage,
+    status: initialStatus,
+  };
+  responseData.error = { name: error.name, message: error.message };
 
   // Error 23505
   if (Number(error.code) === 23505)
     responseData.message =
       "Error interno controlable. Realice la consulta hasta que le funcione. :)";
 
-  responseData.error = { name: error.name, message: error.message };
+  if (responseData["status"] === 401)
+    responseData["error"] = {
+      name: "Unauthorized",
+      message:
+        "No se encuentra autorizado para obtener la información solicitada.",
+    };
 
+  if (responseData["status"] === 400)
+    responseData["error"] = {
+      name: "Bad Request",
+      message:
+        "Sintaxis inválida. El servidor no puede entender la información solicitada o no enviada.",
+    };
+
+  console.error(error);
   return response.status(responseData["status"]).json(responseData);
 };
 
@@ -178,3 +193,4 @@ export const sum = (num1: number, num2: number): number => {
 
 export * from "./auth";
 export * from "./permit";
+export * from "./jwt";

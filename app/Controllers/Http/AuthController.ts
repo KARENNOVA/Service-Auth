@@ -78,8 +78,6 @@ export default class AuthController {
 
       const boolPass = await bcryptCompare(password64, user[0].password);
 
-      console.log(boolPass);
-
       if (boolPass) {
         var token = jwt.sign(
           {

@@ -18,7 +18,7 @@ export interface IDataToken {
 export * from "./detailsUser";
 export * from "./user";
 export * from "./role";
-// export * from "./permit";
+export * from "./permit";
 export * from "./document";
 export * from "./auditTrail";
 export * from "./localization";
