@@ -20,6 +20,7 @@
     "@adonisjs/lucid": "^16.2.2",
     "@adonisjs/repl": "^3.1.0",
     "@types/bcrypt": "^5.0.0",
+    "axios": "^0.24.0",
     "bcrypt": "^5.0.1",
     "jsonwebtoken": "^8.5.1",
     "luxon": "^2.0.2",

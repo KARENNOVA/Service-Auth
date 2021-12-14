@@ -21,12 +21,13 @@ import {
   validatePermit,
 } from "App/Utils/functions";
 import { decodeJWT, getToken } from "App/Utils/functions/jwt";
-import { bcryptEncode } from "./../../Utils/functions/auth";
 import { changeStatus } from "./../../Utils/functions/index";
 import UserRole from "./../../Models/UserRole";
 import UserPermit from "./../../Models/UserPermit";
 import { IResponseData } from "App/Utils/interfaces/index";
 import { Permit } from "App/Utils/_types";
+import { bcryptEncode } from "./../../Utils/functions/auth";
+import { getAddressById } from "./../../Services/location";
 
 export default class UsersController {
   /**
@@ -38,7 +39,7 @@ export default class UsersController {
       status: 200,
     };
 
-    const { token } = getToken(request.headers());
+    const { token, headerAuthorization } = getToken(request.headers());
     let payloadToken: IDataToken = decodeJWT(token);
 
     const { id } = request.qs();
@@ -81,10 +82,17 @@ export default class UsersController {
       return response.status(500).json(responseData);
     }
 
+    const location = await getAddressById(
+      Number(detailsUsers[0]["$attributes"]["location"]),
+      headerAuthorization
+    );
+    console.log(location);
+
     detailsUser = {
       ...detailsUsers[0]["$attributes"],
       id: detailsUsers[0]["$extras"]["du_id"],
       status: detailsUsers[0]["$extras"]["status_name"],
+      location: { ...location },
     };
 
     delete detailsUser["user_id"];
@@ -407,7 +415,7 @@ export default class UsersController {
    * updatePassword
    */
   public async updatePassword({ response, request }: HttpContextContract) {
-    const { token } = getToken(request.headers());
+    const { token, payloadToken } = getToken(request.headers());
 
     const hasPermit = await validatePermit(
       response,
@@ -431,10 +439,15 @@ export default class UsersController {
 
     const newPassword = request.body()["password"];
     const { id } = request.qs();
+    let _id = 0;
+    if (!id) _id = payloadToken["id"];
+    else _id = id;
 
     try {
-      const user: User = await User.findOrFail(id);
-      const newUser = await user.merge({ password: newPassword }).save();
+      const user: User = await User.findOrFail(_id);
+      const newUser = await user
+        .merge({ password: await bcryptEncode(newPassword) })
+        .save();
       responseData["results"] = newUser["$attributes"];
     } catch (error) {
       console.error(error);
@@ -513,4 +526,9 @@ export default class UsersController {
         .json({ message: `Error al inactivar el usuario` });
     }
   }
+
+  /**
+   * destroy
+   */
+  public async destroy({}: HttpContextContract) {}
 }
