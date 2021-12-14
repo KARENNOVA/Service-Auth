@@ -4,7 +4,7 @@ import DetailsUser from "App/Models/DetailsUser";
 import User from "App/Models/User";
 import AuditTrail from "App/Utils/classes/AuditTrail";
 import {
-  IDataToken,
+  // IDataToken,
   IDataUserPayload,
   IDetailsUser,
   IUserPayload,
@@ -20,14 +20,14 @@ import {
   validatePagination,
   validatePermit,
 } from "App/Utils/functions";
-import { decodeJWT, getToken } from "App/Utils/functions/jwt";
+import { /**decodeJWT, */ getToken } from "App/Utils/functions/jwt";
 import { changeStatus } from "./../../Utils/functions/index";
 import UserRole from "./../../Models/UserRole";
 import UserPermit from "./../../Models/UserPermit";
 import { IResponseData } from "App/Utils/interfaces/index";
 import { Permit } from "App/Utils/_types";
 import { bcryptEncode } from "./../../Utils/functions/auth";
-import { getAddressById } from "./../../Services/location";
+// import { getAddressById } from "./../../Services/location";
 
 export default class UsersController {
   /**
@@ -39,8 +39,10 @@ export default class UsersController {
       status: 200,
     };
 
-    const { token, headerAuthorization } = getToken(request.headers());
-    let payloadToken: IDataToken = decodeJWT(token);
+    const { /*headerAuthorization, */ payloadToken } = getToken(
+      request.headers()
+    );
+    // let payloadToken: IDataToken = decodeJWT(token);
 
     const { id } = request.qs();
 
@@ -82,16 +84,16 @@ export default class UsersController {
       return response.status(500).json(responseData);
     }
 
-    const location = await getAddressById(
-      Number(detailsUsers[0]["$attributes"]["location"]),
-      headerAuthorization
-    );
+    // const location = await getAddressById(
+    //   Number(detailsUsers[0]["$attributes"]["location"]),
+    //   headerAuthorization
+    // );
 
     detailsUser = {
       ...detailsUsers[0]["$attributes"],
       id: detailsUsers[0]["$extras"]["du_id"],
       status: detailsUsers[0]["$extras"]["status_name"],
-      location: { ...location },
+      // location: { ...location },
     };
 
     delete detailsUser["user_id"];
