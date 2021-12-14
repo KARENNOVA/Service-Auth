@@ -14,7 +14,7 @@ import { IUser } from "../../Utils/interfaces/user";
 import {
   base64encode,
   getPermitsAndRoles,
-  hasPermit,
+  // hasPermit,
   messageError,
   sum,
   validatePagination,
@@ -27,7 +27,7 @@ import UserPermit from "./../../Models/UserPermit";
 import { IResponseData } from "App/Utils/interfaces/index";
 import { Permit } from "App/Utils/_types";
 import { bcryptEncode } from "./../../Utils/functions/auth";
-import { getAddressById } from "./../../Services/location";
+// import { getAddressById } from "./../../Services/location";
 
 export default class UsersController {
   /**
@@ -39,30 +39,30 @@ export default class UsersController {
       status: 200,
     };
 
-    const { headerAuthorization, payloadToken } = getToken(request.headers());
+    const { payloadToken } = getToken(request.headers());
     // let payloadToken: IDataToken = decodeJWT(token);
 
     const { id } = request.qs();
 
     let detailsUsers: DetailsUser[], detailsUser;
 
-    const permitsAnsRolesPetitioner = await getPermitsAndRoles(
-      request,
-      response,
-      payloadToken.id
-    );
+    // const permitsAnsRolesPetitioner = await getPermitsAndRoles(
+    //   request,
+    //   response,
+    //   payloadToken.id
+    // );
 
-    const boolHasPermit = hasPermit(
-      permitsAnsRolesPetitioner.permits,
-      "detalles_Usuarios"
-    );
+    // const boolHasPermit = hasPermit(
+    //   permitsAnsRolesPetitioner.permits,
+    //   "detalles_Usuarios"
+    // );
 
-    if (!boolHasPermit) {
-      responseData["message"] =
-        "No posee el permiso para ver el detalle del usuario.";
-      responseData["error"] = true;
-      return response.status(400).json(responseData);
-    }
+    // if (!boolHasPermit) {
+    //   responseData["message"] =
+    //     "No posee el permiso para ver el detalle del usuario.";
+    //   responseData["error"] = true;
+    //   return response.status(400).json(responseData);
+    // }
 
     const { roles, permits } = await getPermitsAndRoles(request, response, id);
 
@@ -82,16 +82,16 @@ export default class UsersController {
       return response.status(500).json(responseData);
     }
 
-    const location = await getAddressById(
-      Number(detailsUsers[0]["$attributes"]["location"]),
-      headerAuthorization
-    );
+    // const location = await getAddressById(
+    //   Number(detailsUsers[0]["$attributes"]["location"]),
+    //   headerAuthorization
+    // );
 
     detailsUser = {
       ...detailsUsers[0]["$attributes"],
       id: detailsUsers[0]["$extras"]["du_id"],
       status: detailsUsers[0]["$extras"]["status_name"],
-      location: { ...location },
+      // location: { ...location },
     };
 
     delete detailsUser["user_id"];
