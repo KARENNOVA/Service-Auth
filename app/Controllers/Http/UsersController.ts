@@ -86,7 +86,6 @@ export default class UsersController {
       Number(detailsUsers[0]["$attributes"]["location"]),
       headerAuthorization
     );
-    console.log(location);
 
     detailsUser = {
       ...detailsUsers[0]["$attributes"],
