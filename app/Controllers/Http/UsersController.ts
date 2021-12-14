@@ -14,13 +14,13 @@ import { IUser } from "../../Utils/interfaces/user";
 import {
   base64encode,
   getPermitsAndRoles,
-  // hasPermit,
+  hasPermit,
   messageError,
   sum,
   validatePagination,
   validatePermit,
 } from "App/Utils/functions";
-import { /**decodeJWT, */ getToken } from "App/Utils/functions/jwt";
+import { getToken } from "App/Utils/functions/jwt";
 import { changeStatus } from "./../../Utils/functions/index";
 import UserRole from "./../../Models/UserRole";
 import UserPermit from "./../../Models/UserPermit";
@@ -48,23 +48,23 @@ export default class UsersController {
 
     let detailsUsers: DetailsUser[], detailsUser;
 
-    // const permitsAnsRolesPetitioner = await getPermitsAndRoles(
-    //   request,
-    //   response,
-    //   payloadToken.id
-    // );
+    const permitsAnsRolesPetitioner = await getPermitsAndRoles(
+      request,
+      response,
+      payloadToken.id
+    );
 
-    // const boolHasPermit = hasPermit(
-    //   permitsAnsRolesPetitioner.permits,
-    //   "detalles_Usuarios"
-    // );
+    const boolHasPermit = hasPermit(
+      permitsAnsRolesPetitioner.permits,
+      "detalles_Usuarios"
+    );
 
-    // if (!boolHasPermit) {
-    //   responseData["message"] =
-    //     "No posee el permiso para ver el detalle del usuario.";
-    //   responseData["error"] = true;
-    //   return response.status(400).json(responseData);
-    // }
+    if (!boolHasPermit) {
+      responseData["message"] =
+        "No posee el permiso para ver el detalle del usuario.";
+      responseData["error"] = true;
+      return response.status(400).json(responseData);
+    }
 
     const { roles, permits } = await getPermitsAndRoles(request, response, id);
 
