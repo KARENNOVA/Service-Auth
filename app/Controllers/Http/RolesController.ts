@@ -127,6 +127,8 @@ export default class RolesController {
       // Assign and organized permits in array
       let permits: any[] = [];
 
+      console.log(permitsByRole);
+
       permitsByRole.map((permit) => {
         let tmp: any = {
           id: permit["$original"]["permit_id"],

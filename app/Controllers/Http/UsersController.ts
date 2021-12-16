@@ -221,7 +221,8 @@ export default class UsersController {
    */
   private async createUser(
     reqDataUser: IDataUserPayload,
-    token: string | undefined
+    token: string | undefined,
+    response?
   ): Promise<any> {
     let tmpToken: string = "";
     if (token) tmpToken = token;
@@ -247,9 +248,12 @@ export default class UsersController {
     } catch (error) {
       console.error(error);
       if (error.code === "23505")
-        return Promise.reject(
-          'El usuario ya existe.\nSi no recuerda la contraseña ir a la sección de "¿Olvidó su Contraseña?"'
-        );
+        return response
+          .status(400)
+          .json({
+            message:
+              'El usuario ya existe.\nSi no recuerda la contraseña ir a la sección de "¿Olvidó su Contraseña?"',
+          });
 
       return Promise.reject(
         "A ocurrido un error inesperado al crear el Usuario."
@@ -323,7 +327,8 @@ export default class UsersController {
     try {
       const { user, auditTrail } = await this.createUser(
         payload["user"],
-        token
+        token,
+        response
       );
 
       const detailsUser = await this.createDetailsUser(
