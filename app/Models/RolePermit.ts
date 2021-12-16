@@ -6,7 +6,7 @@ export default class RolePermit extends BaseModel {
   public id: number;
 
   @column()
-  public rol_id: number;
+  public role_id: number;
   @column()
   public permit_id: number;
 

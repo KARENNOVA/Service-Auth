@@ -46,10 +46,7 @@ Route.group(() => {
     const { default: RolesController } = await import(
       "App/Controllers/Http/RolesController"
     );
-    return new RolesController().update(
-      ctx,
-      ctx.request.headers().authorization
-    );
+    return new RolesController().update(ctx);
   });
 
   Route.delete("/:id", async (ctx) => {

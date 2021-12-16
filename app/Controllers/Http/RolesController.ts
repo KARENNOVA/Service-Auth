@@ -186,18 +186,17 @@ export default class RolesController {
 
   public async edit({}: HttpContextContract) {}
 
-  public async update(
-    { request, response }: HttpContextContract,
-    token?: string
-  ) {
+  public async update({ request, response }: HttpContextContract) {
+    const { token } = getToken(request.headers());
     const payload: IPayloadRole = await request.validate(UpdateRoleValidator);
     const { id } = request.qs();
     let responseData: IResponseData = {
       message: "Rol actualizado correctamente.",
       status: 200,
     };
-    let newData: any = { ...payload };
+    let newData: any = { ...payload, role_name: payload["name"] };
     if (newData.permits) delete newData.permits;
+    delete newData.name;
 
     try {
       const role = await Role.findOrFail(id);
@@ -206,7 +205,7 @@ export default class RolesController {
       if (token) tmpToken = token;
 
       const auditTrail = new AuditTrail(tmpToken, role.audit_trail);
-      auditTrail.update(newData, role);
+      await auditTrail.update(newData, role);
 
       // Updating data
       try {
@@ -217,7 +216,19 @@ export default class RolesController {
           })
           .save();
 
-        // if (payload.permits )
+        if (payload.permits && payload.permits.length > 0) {
+          const { success } = await assignPermits(
+            payload["permits"],
+            auditTrail,
+            role.id
+          );
+
+          if (success) console.log("Permisos actualizados");
+          else
+            return response.status(500).json({
+              message: "Error creando la relación de permisos al rol.",
+            });
+        }
 
         responseData[
           "message"
