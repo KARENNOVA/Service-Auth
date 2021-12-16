@@ -61,6 +61,14 @@ export const messageError = (
   responseData.error = { name: error.name, message: error.message };
 
   // Error 23505
+  if (error.routine === "_bt_check_unique")
+    responseData.message = "Valor ya existente.";
+  if (error.type === "user_key_duplicated") {
+    responseData.message =
+      'El usuario ya existe.\nSi no recuerda la contraseña ir a la sección de "¿Olvidó su Contraseña?"';
+    responseData.status = 400;
+  }
+
   if (Number(error.code) === 23505)
     responseData.message =
       "Error interno controlable. Realice la consulta hasta que le funcione. :)";
