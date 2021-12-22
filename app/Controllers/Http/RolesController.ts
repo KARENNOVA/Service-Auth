@@ -124,7 +124,7 @@ export default class RolesController {
         .from("role_permits as rp")
         .innerJoin("roles as r", "rp.role_id", "r.id")
         .innerJoin("permits as p", "rp.permit_id", "p.id")
-        .innerJoin("status as s", "rp.status", "s.id")
+        // .innerJoin("status as s", "rp.status", "s.id")
         .where("rp.role_id", parseInt(id));
 
       // Assign and organized permits in array

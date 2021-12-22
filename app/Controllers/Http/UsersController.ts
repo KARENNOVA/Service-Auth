@@ -72,9 +72,7 @@ export default class UsersController {
 
     try {
       detailsUsers = await DetailsUser.query()
-        .from("details_users as du")
-        .innerJoin("status as s", "du.status", "s.id")
-        .select(["du.id as du_id", "*"])
+        .preload("status_info")
         .where("user_id", userId);
     } catch (error) {
       console.error(error);
@@ -91,8 +89,8 @@ export default class UsersController {
 
     detailsUser = {
       ...detailsUsers[0]["$attributes"],
-      id: detailsUsers[0]["$extras"]["du_id"],
-      status: detailsUsers[0]["$extras"]["status_name"],
+      status:
+        detailsUsers[0]["$preloaded"]["status_info"]["$extras"]["status_name"],
       // location: { ...location },
     };
 
