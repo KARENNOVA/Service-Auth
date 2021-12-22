@@ -8,6 +8,8 @@ import {
   assignPermits,
   changeStatus,
   messageError,
+  sum,
+  validatePagination,
 } from "../../Utils/functions";
 import { IResponseData } from "../../Utils/interfaces/index";
 
@@ -15,6 +17,7 @@ import { IResponseData } from "../../Utils/interfaces/index";
 import UserRole from "App/Models/UserRole";
 import RolePermit from "App/Models/RolePermit";
 import { getToken } from "App/Utils/functions/jwt";
+import { IPaginationValidated } from "App/Utils/interfaces/pagination";
 
 export default class RolesController {
   public async index({}: HttpContextContract) {}
@@ -162,25 +165,116 @@ export default class RolesController {
     return response.status(200).json(dataResponse);
   }
 
-  public async showAll({ response }: HttpContextContract) {
-    let dataResponse: IResponseData = {
-      message: "Todos los roles.",
-      status: 200,
-    };
+  public async showAll({ response, request }: HttpContextContract) {
+    // let dataResponse: IResponseData = {
+    //   message: "Todos los roles.",
+    //   status: 200,
+    // };
+    const paginationDataQS = request.qs();
+    let roles: Role[] = [];
 
-    try {
-      const roles = await Role.query().where("status", 1).orderBy("id", "desc");
-
-      dataResponse["results"] = roles;
-      dataResponse["total"] = roles.length;
-
-      return response.status(200).json(dataResponse);
-    } catch (error) {
-      return messageError(
-        error,
-        response,
-        "Ha ocurrido un error inesperado al obtener los Roles."
+    if (paginationDataQS["with"] && paginationDataQS["with"] === "pagination") {
+      const { searchKey, searchQ, page, pageSize } = paginationDataQS;
+      const paginationValidated: IPaginationValidated = validatePagination(
+        searchKey,
+        searchQ,
+        page,
+        pageSize
       );
+
+      let count: number =
+        paginationValidated["page"] * paginationValidated["pageSize"] -
+        paginationValidated["pageSize"];
+
+      roles = await Role.query()
+        .from("roles as r")
+        .innerJoin("status as s", "r.status", "s.id")
+        .select(["r.id as role_id", "*"])
+        .where("r.status", 1)
+        .where(
+          paginationValidated["search"]["key"],
+          "LIKE",
+          `%${paginationValidated["search"]["q"]}%`
+        )
+        .orderBy("r.id", "desc")
+        .limit(paginationValidated["pageSize"])
+        .offset(count);
+
+      let data;
+      try {
+        // results = results === null ? [] : results;
+
+        roles.map((role) => {
+          let tmpNewData: any = {
+            ...role["$original"],
+            id: role["$extras"]["role_id"],
+
+            status: role["$extras"]["status_name"],
+          };
+
+          delete tmpNewData.cost_center_id;
+          data.push(tmpNewData);
+        });
+
+        // Total Results
+        let totalRoles: number = 0;
+        try {
+          const projects = await Role.query().where("status", 1);
+          totalRoles = projects.length;
+        } catch (error) {
+          console.error(error);
+          return response.status(500).json({
+            message: "Error al traer la lista de todos los Bienes Inmuebles.",
+          });
+        }
+
+        // Count
+        count = roles.length;
+
+        // Next Page
+        let next_page: number | null =
+          paginationValidated["page"] * paginationValidated["pageSize"] <
+          totalRoles
+            ? sum(parseInt(paginationValidated["page"] + ""), 1)
+            : null;
+
+        // Previous Page
+        let previous_page: number | null =
+          paginationValidated["page"] - 1 > 0
+            ? paginationValidated["page"] - 1
+            : null;
+
+        let res = roles;
+        if (next_page === null) {
+          const lastElement = roles.pop() as Role;
+          res = [lastElement, ...roles];
+        }
+
+        return response.json({
+          message: "Lista de Roles paginada.",
+          results: res,
+          page: paginationValidated["page"],
+          count,
+          next_page,
+          previous_page,
+          total_results: totalRoles,
+        });
+        // }
+
+        // try {
+        //   roles = await Role.query().where("status", 1).orderBy("id", "desc");
+
+        //   dataResponse["results"] = roles;
+        //   dataResponse["total"] = roles.length;
+
+        //   return response.status(200).json(dataResponse);
+      } catch (error) {
+        return messageError(
+          error,
+          response,
+          "Ha ocurrido un error inesperado al obtener los Roles."
+        );
+      }
     }
   }
 

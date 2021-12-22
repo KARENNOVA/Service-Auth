@@ -8,6 +8,7 @@ import DetailsUser from "App/Models/DetailsUser";
 import UserRole from "App/Models/UserRole";
 import UserPermit from "App/Models/UserPermit";
 import { Action } from "../_types";
+import { IPaginationValidated } from "../interfaces/pagination";
 
 export const changeStatus = async (
   model: any,
@@ -107,7 +108,6 @@ export const deleteDuplicates = (array: any[]) => {
   let hash = {};
   return array.filter((o) => (hash[o.id] ? false : (hash[o.id] = true)));
 };
-
 // Esto funciona correctamente, ¿Cómo? Sabrá Dios y mi yo del pasado.
 export const getPermitsAndRoles = async (request, response, id?) => {
   let permits: any[] = [],
@@ -180,11 +180,18 @@ export const hasPermit = (permits: any[], permitToValidate: string) => {
   return true;
 };
 
-export const validatePagination = (q?, page?, pageSize?) => {
-  let tmpQ: string, tmpPage: number, tmpPageSize: number;
+export const validatePagination = (
+  searchKey: string,
+  searchQ?: string | number,
+  page?: number,
+  pageSize?: number
+): IPaginationValidated => {
+  let tmpSearch: { key: string; value: string },
+    tmpPage: number,
+    tmpPageSize: number;
 
-  if (!q) tmpQ = "";
-  else tmpQ = String(q).toUpperCase().trim();
+  if (!searchQ) tmpSearch = { key: searchKey, value: "" };
+  else tmpSearch = { key: searchKey, value: String(searchQ) };
 
   if (!pageSize) tmpPageSize = 10;
   else tmpPageSize = Number(pageSize);
@@ -192,7 +199,7 @@ export const validatePagination = (q?, page?, pageSize?) => {
   if (!page) tmpPage = 1;
   else tmpPage = Number(page);
 
-  return { q: tmpQ, page: tmpPage, pageSize: tmpPageSize };
+  return { search: tmpSearch, page: tmpPage, pageSize: tmpPageSize };
 };
 
 export const sum = (num1: number, num2: number): number => {

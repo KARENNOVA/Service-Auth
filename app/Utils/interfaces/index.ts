@@ -5,8 +5,8 @@ export interface IResponseData {
   error?: any;
   page?: number;
   count?: number;
-  next_page?: number;
-  previous_page?: number;
+  next_page?: number | null;
+  previous_page?: number | null;
   total_results?: number;
 }
 

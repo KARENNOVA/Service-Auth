@@ -24,10 +24,12 @@ import { getToken } from "App/Utils/functions/jwt";
 import { changeStatus } from "./../../Utils/functions/index";
 import UserRole from "./../../Models/UserRole";
 import UserPermit from "./../../Models/UserPermit";
-import { IResponseData } from "App/Utils/interfaces/index";
 import { Permit } from "App/Utils/_types";
 import { bcryptEncode } from "./../../Utils/functions/auth";
 // import { getAddressById } from "./../../Services/location";
+import Role from "./../../Models/Role";
+import { IPaginationValidated } from "App/Utils/interfaces/pagination";
+import { IResponseData } from "App/Utils/interfaces/index";
 
 export default class UsersController {
   /**
@@ -104,101 +106,162 @@ export default class UsersController {
     return response.status(200).json(responseData);
   }
 
+  private async getRoleId(role: string): Promise<number> {
+    const usersRole = await Role.query()
+      .select(["id"])
+      .where("role_name", role);
+
+    return Number(usersRole[0]["$attributes"]["id"]);
+  }
+
   /**
    * showAll
    */
   public async showAll({ response, request }: HttpContextContract) {
-    const { q, page, pageSize, to } = request.qs();
-    const tmpWith = request.qs().with;
-    const pagination = validatePagination(q, page, pageSize);
-    let results, detailsUser;
+    let responseData: IResponseData = {
+      message: "Lista de Usuarios completa. | Sin paginación.",
+      status: 200,
+    };
+    const { page, pageSize, role, key, value, first, only } = request.qs();
+
+    let pagination: IPaginationValidated = { page: 0, pageSize: 1000000 };
+    if (request.qs().with && request.qs().with === "pagination") {
+      pagination = validatePagination(key, value, page, pageSize);
+      responseData["message"] = "Lista de Usuarios completa. | Con paginación.";
+    }
+
+    let results: any[] = [],
+      data: any[] = [];
+
     let count: number =
-      pagination["page"] * pagination["pageSize"] - pagination["pageSize"];
+      pagination["page"] > 0
+        ? pagination["page"] * pagination["pageSize"] - pagination["pageSize"]
+        : 0;
 
     try {
-      if (tmpWith === "pagination")
+      results = await DetailsUser.query()
+        .preload("status_info")
+        .select(["user_id as u_id", "*"])
+        .orderBy("id", "desc")
+        .limit(pagination["pageSize"])
+        .offset(count);
+
+      if (only) {
+        const num = only === "active" ? 1 : 0;
         results = await DetailsUser.query()
-          .from("details_users as du")
-          .innerJoin("status as s", "du.status", "s.id")
-          .select(["du.user_id as du_id", "*"])
-          .where("du.status", 1)
-          .orderBy("du.id", "desc")
+          .preload("status_info")
+          .select(["user_id as u_id", "*"])
+          .where("status", num)
+          .orderBy("id", "desc")
           .limit(pagination["pageSize"])
           .offset(count);
-      else
-        results = await DetailsUser.query()
-          .from("details_users as du")
-          .innerJoin("status as s", "du.status", "s.id")
-          .select(["du.user_id as du_id", "*"])
-          .where("du.status", 1)
-          .orderBy("du.id", "desc");
+      }
+    } catch (error) {
+      return messageError(
+        error,
+        response,
+        "Error inesperado al obtener todos los usuarios.",
+        400
+      );
+    }
 
-      if (to && to === "origin")
-        try {
-          results = await DetailsUser.query()
-            .from("details_users as du")
-            .innerJoin("status as s", "du.status", "s.id")
-            .innerJoin("users as u", "du.user_id", "u.id")
-            .select(["du.user_id as du_id", "*"])
-            .where("du.status", 1)
-            .orderBy("du.id", "desc");
-        } catch (error) {
-          console.error(error);
-        }
+    // Filtro por Rol
+    if (role) {
+      try {
+        const roleId: number =
+          typeof role === "string" ? await this.getRoleId(role) : Number(role);
+        let users: UserRole[] = await UserRole.query()
+          .select(["user_id"])
+          .where("role_id", roleId)
+          .where("status", 1)
+          .limit(pagination["pageSize"])
+          .offset(count);
 
-      results = results === null ? [] : results;
-      let data: any[] = [];
+        results = [];
+        await Promise.all(
+          users.map(async (user) => {
+            let tmpDetailsUser = await DetailsUser.query()
+              .preload("status_info")
+              .where("user_id", user["$attributes"]["user_id"])
+              .orderBy("id", "desc")
+              .limit(pagination["pageSize"])
+              .offset(count);
 
+            if (only) {
+              const num = only === "active" ? 1 : 0;
+              tmpDetailsUser = await DetailsUser.query()
+                .preload("status_info")
+                .select(["user_id as u_id", "*"])
+                .where("status", num)
+                .orderBy("id", "desc")
+                .limit(pagination["pageSize"])
+                .offset(count);
+            }
+
+            if (tmpDetailsUser.length > 0) results.push(tmpDetailsUser[0]);
+          })
+        );
+
+        responseData["results"] = results;
+      } catch (error) {
+        return messageError(error, response);
+      }
+    }
+
+    // results = results === null ? [] : results;
+    try {
       results.map((user) => {
         let tmpNewData: any = {
           ...user["$attributes"],
-          id: user["$extras"]["du_id"],
-          status: user["$extras"]["status_name"],
+          status: user["$preloaded"]["status_info"]["$extras"]["status_name"],
         };
 
-        if (!to) data.push(tmpNewData);
-        if (to && to === "origin" && user["$extras"]["password"] === null)
-          data.push(tmpNewData);
+        data.push(tmpNewData);
       });
 
       // Total Results
       try {
-        detailsUser = await DetailsUser.query().where("status", 1);
+        responseData["total_results"] = (await DetailsUser.all()).length;
       } catch (error) {
-        console.error(error);
-        return response.status(500).json({
-          message: "Error al traer la lista de todos los Bienes Inmuebles.",
-        });
+        return messageError(
+          error,
+          response,
+          "Error al obtener la cantidad de usuarios completa.",
+          400
+        );
       }
-      const total_results = detailsUser.length;
+      // responseData["total_results"] = detailsUser.length;
 
       // Count
       count = results.length;
 
       // Next Page
-      let next_page: number | null =
-        pagination["page"] * pagination["pageSize"] < detailsUser.length
+      responseData["next_page"] =
+        pagination["page"] * pagination["pageSize"] <
+          responseData["total_results"] && pagination["page"] !== 0
           ? sum(parseInt(pagination["page"] + ""), 1)
           : null;
 
       // Previous Page
-      let previous_page: number | null =
-        pagination["page"] - 1 > 0 ? pagination["page"] - 1 : null;
+      responseData["previous_page"] =
+        pagination["page"] - 1 > 0 && pagination["page"] !== 0
+          ? pagination["page"] - 1
+          : null;
 
+      // Order by descending
       data = data.sort((a, b) => b.id - a.id);
 
-      const lastElement = data.pop();
-      const res = [lastElement, ...data];
+      if (responseData["next_page"] === null && first === "up") {
+        const lastElement = data.pop();
+        responseData["results"] = [lastElement, ...data];
+      }
 
-      return response.json({
-        message: "Lista de Usuarios",
-        results: res,
-        page: pagination["page"],
-        count,
-        next_page,
-        previous_page,
-        total_results,
-      });
+      // responseData["message"] = "Lista de Usuarios";
+      responseData["results"] = data;
+      responseData["page"] = pagination["page"];
+      responseData["count"] = count;
+
+      return response.status(responseData["status"]).json(responseData);
     } catch (error) {
       console.error(error);
       return response.status(500).json({ message: "Request to Users failed!" });
