@@ -192,9 +192,9 @@ export default class RolesController {
         .select(["r.id as role_id", "*"])
         .where("r.status", 1)
         .where(
-          paginationValidated["search"]["key"],
+          paginationValidated["search"]!["key"],
           "LIKE",
-          `%${paginationValidated["search"]["q"]}%`
+          `%${paginationValidated["search"]!["q"]}%`
         )
         .orderBy("r.id", "desc")
         .limit(paginationValidated["pageSize"])
