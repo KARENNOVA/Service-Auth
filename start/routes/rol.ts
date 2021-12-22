@@ -8,22 +8,11 @@ Route.group(() => {
     const { default: RolesController } = await import(
       "App/Controllers/Http/RolesController"
     );
-    // const { default: PermitsController } = await import(
-    //   "App/Controllers/Http/PermitsController"
-    // );
 
     if (ctx.request.qs().id) return new RolesController().show(ctx);
 
     return new RolesController().showAll(ctx);
   });
-
-  //   Route.get("/", async (ctx) => {
-  //     const { default: RolesController } = await import(
-  //       "App/Controllers/Http/RolesController"
-  //     );
-
-  //     return new RolesController().getDataUser(ctx);
-  //   });
 
   // POST
   Route.post("/", async (ctx) => {
