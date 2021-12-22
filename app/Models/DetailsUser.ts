@@ -1,6 +1,8 @@
-import { BaseModel, column } from "@ioc:Adonis/Lucid/Orm";
+import { BaseModel, column, HasOne, hasOne } from "@ioc:Adonis/Lucid/Orm";
 import { IAuditTrail, ISurnames } from "App/Utils/interfaces";
 import { INames } from "App/Utils/interfaces";
+import Status from "./Status";
+import User from "./User";
 
 export default class DetailsUser extends BaseModel {
   @column({ isPrimary: true })
@@ -46,4 +48,11 @@ export default class DetailsUser extends BaseModel {
   public status: number;
   @column()
   public audit_trail: IAuditTrail;
+
+  // Foreign Key Relation
+  @hasOne(() => Status, { foreignKey: "id", localKey: "status" })
+  public status_info: HasOne<typeof Status>;
+
+  @hasOne(() => User, { foreignKey: "id", localKey: "user_id" })
+  public user_info: HasOne<typeof User>;
 }
