@@ -20,6 +20,13 @@ Route.group(() => {
     );
     return new AuthController().logIn(ctx);
   });
+
+  Route.post("/log-out", async (ctx) => {
+    const { default: AuthController } = await import(
+      "App/Controllers/Http/AuthController"
+    );
+    return new AuthController().logOut(ctx);
+  });
 })
   .prefix(`${apiVersion}/auth`)
   .middleware("logRegistered");
