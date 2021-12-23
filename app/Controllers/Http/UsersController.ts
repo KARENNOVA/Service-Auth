@@ -137,12 +137,18 @@ export default class UsersController {
         : 0;
 
     try {
-      results = await DetailsUser.query()
-        .preload("status_info")
-        .select(["user_id as u_id", "*"])
-        .orderBy("id", "desc")
-        .limit(pagination["pageSize"])
-        .offset(count);
+      if (pagination)
+        results = await DetailsUser.query()
+          .preload("status_info")
+          .select(["user_id as u_id", "*"])
+          .where(
+            pagination["search"]!["key"],
+            "LIKE",
+            `%${pagination["search"]!["value"]}%`
+          )
+          .orderBy("id", "desc")
+          .limit(pagination["pageSize"])
+          .offset(count);
 
       if (only) {
         const num = only === "active" ? 1 : 0;
