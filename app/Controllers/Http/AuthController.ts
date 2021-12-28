@@ -2,14 +2,15 @@ import jwt from "jsonwebtoken";
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Env from "@ioc:Adonis/Core/Env";
 import {
-  authenticationUme,
   base64encode,
   bcryptCompare,
+  generarAutentificacion,
   getToken,
   messageError,
 } from "App/Utils/functions";
 import User from "App/Models/User";
 import { IResponseData } from "App/Utils/interfaces";
+import { logInUser, registerUser } from "./../../Services/alcMedellin";
 
 export default class AuthController {
   /**
@@ -18,36 +19,78 @@ export default class AuthController {
   public async index({ response }: HttpContextContract) {
     let autenticacion;
     try {
-      autenticacion = await authenticationUme();
-      console.log(autenticacion);
+      autenticacion = await generarAutentificacion();
     } catch (error) {
       console.error(error);
       return response.send("error in autenticacion");
     }
+
+    let data = {
+      info: { action: "registrarInfoPersona" },
+      persona: {
+        tipo_sociedad: "N-Persona Natural",
+        tipo_entidad: "NINGUNO",
+        tipo_identificacion: "1-Cedula de Ciudadanía",
+        documento: "1000416139",
+        nombres: "Ficticio Prueba",
+        apellidos: "Listo ejemplo",
+        correo: "santiago.suarez@dation.co",
+        direccion: "calle falsa 123",
+        barrio: "Candelaria",
+        telefono: "5814766",
+        celular: "300102000",
+        pais: "CO",
+        departamento: "05-ANTIOQUIA",
+        municipio: "05001-MEDELLÍN",
+        politica: "true",
+        notificacion: "false",
+        genero: "f",
+      },
+      autenticacion,
+    };
+
+    const axiosResponse = await registerUser(data);
+    console.log(axiosResponse);
+
     try {
-      return response.status(200).json({
-        info: { action: "registrarInfoPersona" },
-        persona: {
-          tipo_sociedad: "N-Persona Natural",
-          tipo_entidad: "NINGUNO",
-          tipo_identificacion: "1-Cedula de Ciudadania",
-          documento: "1017242383",
-          nombres: "Ficticio Prueba",
-          apellidos: "Listo ejemplo",
-          correo: "prueba@axcelsoftware.com",
-          direccion: "calle falsa 123",
-          barrio: "Candelaria",
-          telefono: "5814766",
-          celular: "300102000",
-          pais: "CO",
-          departamento: "05-ANTIOQUIA",
-          municipio: "05001-MEDELLÍN",
-          politica: "true",
-          notificacion: "false",
-          genero: "f",
-        },
-        autenticacion,
-      });
+      return response.status(200).json(data);
+    } catch (error) {
+      console.error(error);
+      return response
+        .status(500)
+        .json({ message: "Request to Projects failed!", error });
+    }
+  }
+
+  /**
+   * logInAlcaldia
+   */
+  public async logInAlcaldia({ response, request }: HttpContextContract) {
+    let autenticacion;
+    try {
+      autenticacion = await generarAutentificacion();
+    } catch (error) {
+      return messageError(
+        error,
+        response,
+        "Error al generar la información de autentificación contra UME."
+      );
+    }
+    let data = {
+      info: {
+        action: "inicioSesion",
+        usuario: request.body().user,
+        contra: request.body().password,
+      },
+
+      autenticacion,
+    };
+
+    const axiosResponse = await logInUser(data);
+    console.log(axiosResponse);
+
+    try {
+      return response.status(200).json(data);
     } catch (error) {
       console.error(error);
       return response

@@ -170,14 +170,16 @@ export default class RolesController {
     //   message: "Todos los roles.",
     //   status: 200,
     // };
+    // const { page, pageSize, role, , first, only } = request.qs();
+
     const paginationDataQS = request.qs();
     let roles: Role[] = [];
 
     if (paginationDataQS["with"] && paginationDataQS["with"] === "pagination") {
-      const { searchKey, searchQ, page, pageSize } = paginationDataQS;
+      const { key, value, page, pageSize } = paginationDataQS;
       const paginationValidated: IPaginationValidated = validatePagination(
-        searchKey,
-        searchQ,
+        key,
+        value,
         page,
         pageSize
       );
@@ -186,30 +188,29 @@ export default class RolesController {
         paginationValidated["page"] * paginationValidated["pageSize"] -
         paginationValidated["pageSize"];
 
-      roles = await Role.query()
-        .from("roles as r")
-        .innerJoin("status as s", "r.status", "s.id")
-        .select(["r.id as role_id", "*"])
-        .where("r.status", 1)
-        .where(
-          paginationValidated["search"]!["key"],
-          "LIKE",
-          `%${paginationValidated["search"]!["q"]}%`
-        )
-        .orderBy("r.id", "desc")
-        .limit(paginationValidated["pageSize"])
-        .offset(count);
-
-      let data;
+      let data: any[] = [];
       try {
+        roles = await Role.query()
+          .preload("status_info")
+          .select(["id as role_id", "*"])
+          .where("status", 1)
+          .where(
+            paginationValidated["search"]!["key"],
+            "LIKE",
+            `%${paginationValidated["search"]!["value"]}%`
+          )
+          .orderBy("id", "desc")
+          .limit(paginationValidated["pageSize"])
+          .offset(count);
+        console.log(roles);
+
         // results = results === null ? [] : results;
 
         roles.map((role) => {
           let tmpNewData: any = {
             ...role["$original"],
             id: role["$extras"]["role_id"],
-
-            status: role["$extras"]["status_name"],
+            status: role["$preloaded"]["status_info"]["$extras"]["status_name"],
           };
 
           delete tmpNewData.cost_center_id;
@@ -219,8 +220,7 @@ export default class RolesController {
         // Total Results
         let totalRoles: number = 0;
         try {
-          const projects = await Role.query().where("status", 1);
-          totalRoles = projects.length;
+          totalRoles = (await Role.query().where("status", 1)).length;
         } catch (error) {
           console.error(error);
           return response.status(500).json({

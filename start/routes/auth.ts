@@ -5,12 +5,20 @@ const apiVersion = Env.get("API_VERSION");
 
 Route.group(() => {
   // GET
-  Route.get("/", async (ctx) => {
+  Route.post("/", async (ctx) => {
     const { default: AuthController } = await import(
       "App/Controllers/Http/AuthController"
     );
 
     return new AuthController().index(ctx);
+  });
+
+  Route.post("/log-in-ume", async (ctx) => {
+    const { default: AuthController } = await import(
+      "App/Controllers/Http/AuthController"
+    );
+
+    return new AuthController().logInAlcaldia(ctx);
   });
 
   // POST
