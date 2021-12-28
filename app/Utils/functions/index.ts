@@ -193,6 +193,8 @@ export const validatePagination = (
   if (!searchQ) tmpSearch = { key: searchKey, value: "" };
   else tmpSearch = { key: searchKey, value: String(searchQ) };
 
+  if (tmpSearch["key"] === "name") tmpSearch["key"] = "names ->> 'firstName'";
+
   if (!pageSize) tmpPageSize = 10;
   else tmpPageSize = Number(pageSize);
 

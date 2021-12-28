@@ -141,11 +141,16 @@ export default class UsersController {
         results = await DetailsUser.query()
           .preload("status_info")
           .select(["user_id as u_id", "*"])
-          .where(
-            pagination["search"]!["key"],
-            "LIKE",
-            `%${pagination["search"]!["value"]}%`
+          .whereRaw(
+            `${pagination["search"]!["key"]} LIKE '%${
+              pagination["search"]!["value"]
+            }%'`
           )
+          // .where(
+          //   pagination["search"]!["key"],
+          //   "LIKE",
+          //   `%${pagination["search"]!["value"]}%`
+          // )
           .orderBy("id", "desc")
           .limit(pagination["pageSize"])
           .offset(count);
