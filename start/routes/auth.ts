@@ -35,6 +35,13 @@ Route.group(() => {
     );
     return new AuthController().logOut(ctx);
   });
+
+  Route.get("/sid", async (ctx) => {
+    const { default: AuthController } = await import(
+      "App/Controllers/Http/AuthController"
+    );
+    return new AuthController().registerSID(ctx);
+  });
 })
   .prefix(`${apiVersion}/auth`)
   .middleware("logRegistered");

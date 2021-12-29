@@ -13,6 +13,8 @@ export default class User extends BaseModel {
 
   @column()
   public online?: boolean;
+  @column()
+  public sid?: string | null;
 
   @column()
   public status: number;

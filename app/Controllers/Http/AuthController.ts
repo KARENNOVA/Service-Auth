@@ -202,7 +202,7 @@ export default class AuthController {
     }
 
     try {
-      await user.merge({ online: false }).save();
+      await user.merge({ online: false, sid: null }).save();
     } catch (error) {
       return messageError(
         error,
@@ -210,6 +210,33 @@ export default class AuthController {
         "Error inesperado al quitar el registro de inicio de sesión del Usuario.",
         400
       );
+    }
+
+    return response.status(responseData["status"]).json(responseData);
+  }
+
+  /**
+   * registerSID
+   */
+  public async registerSID({ response, request }: HttpContextContract) {
+    let responseData: IResponseData = {
+      message: "SID registrado correctamente",
+      status: 200,
+    };
+
+    const { id, sid } = request.qs();
+    let user: User;
+
+    try {
+      user = await User.findOrFail(id);
+    } catch (error) {
+      return messageError(error, response, `Usuario con ID ${id} no existe.`);
+    }
+
+    try {
+      responseData["results"] = await user.merge({ sid }).save();
+    } catch (error) {
+      return messageError(error, response, "Error al registrar el SID");
     }
 
     return response.status(responseData["status"]).json(responseData);
