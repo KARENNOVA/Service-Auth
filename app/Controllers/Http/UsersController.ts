@@ -137,7 +137,14 @@ export default class UsersController {
         : 0;
 
     try {
-      if (pagination)
+      results = await DetailsUser.query()
+        .preload("status_info")
+        .select(["user_id as u_id", "*"])
+        .orderBy("id", "desc")
+        .limit(pagination["pageSize"])
+        .offset(count);
+
+      if (pagination["page"] !== 0)
         results = await DetailsUser.query()
           .preload("status_info")
           .select(["user_id as u_id", "*"])

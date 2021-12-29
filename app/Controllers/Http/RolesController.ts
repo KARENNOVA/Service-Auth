@@ -166,115 +166,138 @@ export default class RolesController {
   }
 
   public async showAll({ response, request }: HttpContextContract) {
-    // let dataResponse: IResponseData = {
-    //   message: "Todos los roles.",
-    //   status: 200,
-    // };
-    // const { page, pageSize, role, , first, only } = request.qs();
+    let responseData: IResponseData = {
+      message: "Lista de Roles completa. | Sin paginación.",
+      status: 200,
+    };
+    const { page, pageSize, key, value, only } = request.qs();
 
-    const paginationDataQS = request.qs();
-    let roles: Role[] = [];
+    let pagination: IPaginationValidated = { page: 0, pageSize: 1000000 };
+    if (request.qs().with && request.qs().with === "pagination") {
+      pagination = validatePagination(key, value, page, pageSize);
+      responseData["message"] = "Lista de Roles completa. | Con paginación.";
+    }
 
-    if (paginationDataQS["with"] && paginationDataQS["with"] === "pagination") {
-      const { key, value, page, pageSize } = paginationDataQS;
-      const paginationValidated: IPaginationValidated = validatePagination(
-        key,
-        value,
-        page,
-        pageSize
-      );
+    let results: any[] = [],
+      data: any[] = [];
 
-      let count: number =
-        paginationValidated["page"] * paginationValidated["pageSize"] -
-        paginationValidated["pageSize"];
+    let count: number =
+      pagination["page"] > 0
+        ? pagination["page"] * pagination["pageSize"] - pagination["pageSize"]
+        : 0;
 
-      let data: any[] = [];
-      try {
-        roles = await Role.query()
+    try {
+      results = await Role.query()
+        .preload("status_info")
+        .select(["id as role_id", "*"])
+        .orderBy("id", "desc")
+        .limit(pagination["pageSize"])
+        .offset(count);
+
+      if (pagination["page"] !== 0)
+        results = await Role.query()
           .preload("status_info")
           .select(["id as role_id", "*"])
-          .where("status", 1)
-          .where(
-            paginationValidated["search"]!["key"],
-            "LIKE",
-            `%${paginationValidated["search"]!["value"]}%`
+          .whereRaw(
+            `${pagination["search"]!["key"]} LIKE '%${
+              pagination["search"]!["value"]
+            }%'`
           )
           .orderBy("id", "desc")
-          .limit(paginationValidated["pageSize"])
+          .limit(pagination["pageSize"])
           .offset(count);
-        console.log(roles);
+      // .where(
+      //   pagination["search"]!["key"],
+      //   "LIKE",
+      //   `%${pagination["search"]!["value"]}%`
+      // )
 
-        // results = results === null ? [] : results;
-
-        roles.map((role) => {
-          let tmpNewData: any = {
-            ...role["$original"],
-            id: role["$extras"]["role_id"],
-            status: role["$preloaded"]["status_info"]["$extras"]["status_name"],
-          };
-
-          delete tmpNewData.cost_center_id;
-          data.push(tmpNewData);
-        });
-
-        // Total Results
-        let totalRoles: number = 0;
-        try {
-          totalRoles = (await Role.query().where("status", 1)).length;
-        } catch (error) {
-          console.error(error);
-          return response.status(500).json({
-            message: "Error al traer la lista de todos los Bienes Inmuebles.",
-          });
-        }
-
-        // Count
-        count = roles.length;
-
-        // Next Page
-        let next_page: number | null =
-          paginationValidated["page"] * paginationValidated["pageSize"] <
-          totalRoles
-            ? sum(parseInt(paginationValidated["page"] + ""), 1)
-            : null;
-
-        // Previous Page
-        let previous_page: number | null =
-          paginationValidated["page"] - 1 > 0
-            ? paginationValidated["page"] - 1
-            : null;
-
-        let res = roles;
-        if (next_page === null) {
-          const lastElement = roles.pop() as Role;
-          res = [lastElement, ...roles];
-        }
-
-        return response.json({
-          message: "Lista de Roles paginada.",
-          results: res,
-          page: paginationValidated["page"],
-          count,
-          next_page,
-          previous_page,
-          total_results: totalRoles,
-        });
-        // }
-
-        // try {
-        //   roles = await Role.query().where("status", 1).orderBy("id", "desc");
-
-        //   dataResponse["results"] = roles;
-        //   dataResponse["total"] = roles.length;
-
-        //   return response.status(200).json(dataResponse);
-      } catch (error) {
-        return messageError(
-          error,
-          response,
-          "Ha ocurrido un error inesperado al obtener los Roles."
-        );
+      if (only) {
+        const num = only === "active" ? 1 : 0;
+        results = await Role.query()
+          .preload("status_info")
+          .select(["id as role_id", "*"])
+          .whereRaw(
+            `${pagination["search"]!["key"]} LIKE '%${
+              pagination["search"]!["value"]
+            }%'`
+          )
+          .where("status", num)
+          .orderBy("id", "desc")
+          .limit(pagination["pageSize"])
+          .offset(count);
       }
+    } catch (error) {
+      return messageError(error, response);
+    }
+
+    try {
+      results.map((role) => {
+        let tmpNewData: any = {
+          ...role["$original"],
+          id: role["$extras"]["role_id"],
+          status: role["$preloaded"]["status_info"]["$extras"]["status_name"],
+        };
+
+        delete tmpNewData.cost_center_id;
+        data.push(tmpNewData);
+      });
+
+      // Total Results
+      try {
+        responseData["total_results"] = (
+          await Role.query().where("status", 1)
+        ).length;
+      } catch (error) {
+        console.error(error);
+        return response.status(500).json({
+          message: "Error al traer la lista de todos los Bienes Inmuebles.",
+        });
+      }
+
+      // Count
+      count = results.length;
+
+      // Next Page
+      responseData["next_page"] =
+        pagination["page"] * pagination["pageSize"] <
+          responseData["total_results"] && pagination["page"] !== 0
+          ? sum(parseInt(pagination["page"] + ""), 1)
+          : null;
+
+      // Previous Page
+      responseData["previous_page"] =
+        pagination["page"] - 1 > 0 && pagination["page"] !== 0
+          ? pagination["page"] - 1
+          : null;
+
+      let res = data;
+      if (responseData["next_page"] === null) {
+        const lastElement = data.pop() as Role;
+        res = [lastElement, ...data];
+      }
+
+      // responseData["message"] = "Lista de Usuarios";
+      responseData["results"] = res;
+      responseData["page"] = pagination["page"];
+      responseData["count"] = count;
+
+      return response.json(responseData);
+      // }
+
+      // try {
+      //   roles = await Role.query().where("status", 1).orderBy("id", "desc");
+
+      //   dataResponse["results"] = roles;
+      //   dataResponse["total"] = roles.length;
+
+      //   return response.status(200).json(dataResponse);
+    } catch (error) {
+      return messageError(
+        error,
+        response,
+        "Ha ocurrido un error inesperado al obtener los Roles."
+      );
     }
   }
 
