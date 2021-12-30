@@ -134,6 +134,11 @@ export default class AuthController {
       const boolPass = await bcryptCompare(password64, user.password);
 
       if (boolPass) {
+        this.logOut(
+          { response, request } as HttpContextContract,
+          user["$attributes"]["id"]
+        );
+
         var token = jwt.sign(
           {
             id: user["$attributes"].id,
@@ -167,7 +172,8 @@ export default class AuthController {
         return messageError(
           { attemp },
           response,
-          "Usuario o Contraseña incorrecta."
+          "Usuario o Contraseña incorrecta.",
+          400
         );
       }
     } catch (error) {
@@ -182,16 +188,18 @@ export default class AuthController {
   /**
    * logOut
    */
-  public async logOut({ response, request }: HttpContextContract) {
+  public async logOut({ response, request }: HttpContextContract, id?: number) {
     let responseData: IResponseData = {
       message: "Cierre de sesión exitoso.",
       status: 200,
     };
     const { payloadToken } = getToken(request.headers());
 
+    const idUser = id ? id : payloadToken["id"];
+
     let user: User;
     try {
-      user = await User.findOrFail(payloadToken["id"]);
+      user = await User.findOrFail(idUser);
     } catch (error) {
       return messageError(
         error,

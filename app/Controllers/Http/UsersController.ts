@@ -238,6 +238,12 @@ export default class UsersController {
       // Total Results
       try {
         responseData["total_results"] = (await DetailsUser.all()).length;
+        if (only) {
+          const num = only === "active" ? 1 : 0;
+          responseData["total_results"] = (
+            await DetailsUser.query().where("status", num)
+          ).length;
+        }
       } catch (error) {
         return messageError(
           error,
