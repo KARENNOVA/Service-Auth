@@ -115,8 +115,6 @@ export default class AuthController {
     try {
       userEncryptBase64 = await base64encode(String(idNumber));
     } catch (error) {
-      console.error(error);
-
       return messageError(
         error,
         response,
@@ -144,7 +142,8 @@ export default class AuthController {
             id: user["$attributes"].id,
             // exp: Math.floor(Date.now() / 1000) + (60 * 60),
           },
-          Env.get("APP_KEY") || "secret"
+          Env.get("APP_KEY") || "secret",
+          { expiresIn: "1d" }
         );
         responseData["results"] = token;
 
