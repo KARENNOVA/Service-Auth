@@ -453,7 +453,7 @@ export default class UsersController {
         if (newData.user.password) {
           const user = await User.findByOrFail(
             "id_number",
-            detailsUser.id_number
+            base64encode(detailsUser.id_number)
           );
 
           // Updating data
