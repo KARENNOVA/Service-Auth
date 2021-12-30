@@ -26,6 +26,7 @@ export default class CreateUserValidator {
       location: schema.string({ trim: true }),
       cellphone_number: schema.number(),
       phone_number: schema.number(),
+      phone_number_ext: schema.number.optional(),
       gender: schema.string({ trim: true }),
       society_type: schema.string({ trim: true }),
       entity_type: schema.string({ trim: true }),
