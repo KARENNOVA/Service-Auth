@@ -39,6 +39,8 @@ export default class DetailsUser extends BaseModel {
   @column()
   public phone_number: number;
   @column()
+  public phone_number_ext?: number;
+  @column()
   public gender: string;
 
   @column()
