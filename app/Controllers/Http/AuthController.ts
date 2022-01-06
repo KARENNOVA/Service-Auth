@@ -132,7 +132,7 @@ export default class AuthController {
       const boolPass = await bcryptCompare(password64, user.password);
 
       if (boolPass) {
-        this.logOut(
+        await this.logOut(
           { response, request } as HttpContextContract,
           user["$attributes"]["id"]
         );
