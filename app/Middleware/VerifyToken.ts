@@ -25,7 +25,6 @@ export default class VerifyToken {
 
     if (
       token === "" ||
-      !payloadToken["iat"] ||
       (payloadToken["iat"] === -1 && payloadToken["id"] === -1)
     ) {
       return response.unauthorized(responseData);
