@@ -192,9 +192,13 @@ export default class AuthController {
       message: "Cierre de sesión exitoso.",
       status: 200,
     };
-    const { payloadToken } = getToken(request.headers());
-
-    const idUser = id ? id : payloadToken["id"];
+    let idUser = 0;
+    if (id) {
+      idUser = id;
+    } else {
+      const { payloadToken } = getToken(request.headers());
+      idUser = payloadToken["id"];
+    }
 
     let user: User;
     try {
