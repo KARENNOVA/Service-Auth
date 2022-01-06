@@ -427,7 +427,7 @@ export default class UsersController {
 
     try {
       if (typeof id === "string") {
-        const detailsUser = await DetailsUser.findOrFail(id);
+        const detailsUser = await DetailsUser.findByOrFail("user_id", id);
         let dataUpdated: any = {
           ...newData.detailsUser,
         };
