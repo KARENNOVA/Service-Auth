@@ -1,9 +1,8 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
-import User from "App/Models/User";
-import { messageError } from "App/Utils/functions";
-import { decodeJWT, getToken } from "App/Utils/functions/jwt";
-import { IDataToken } from "App/Utils/interfaces";
-import { IResponseData } from "App/Utils/interfaces/index";
+import { getToken } from "App/Utils/functions/jwt";
+import axios from "axios";
+import Env from "@ioc:Adonis/Core/Env";
+import { IResponseData } from "App/Utils/interfaces";
 
 export default class VerifyToken {
   public async handle(
@@ -12,25 +11,40 @@ export default class VerifyToken {
   ) {
     let responseData: IResponseData = {
       message: "Debe de ingresar para realizar esta acción.",
-      status: 200,
+      error: true,
+      status: 401,
     };
-    const { token } = getToken(request.headers());
-
-    // Get data of Token
-    let payload: IDataToken = { id: -1, iat: -1 };
-    if (token !== "") payload = decodeJWT(token);
-
-    if (token === "" || (payload["iat"] === -1 && payload["id"] === -1)) {
-      return messageError(undefined, response, responseData["message"], 401);
+    const { token, headerAuthorization, payloadToken } = getToken(
+      request.headers()
+    );
+    if (payloadToken === undefined) {
+      responseData["message"] =
+        "Token expirado. Iniciar sesión de nuevo para poder continuar.";
+      return response.unauthorized(responseData);
     }
 
-    // Validating ID User | SABI
+    if (
+      token === "" ||
+      !payloadToken["iat"] ||
+      (payloadToken["iat"] === -1 && payloadToken["id"] === -1)
+    ) {
+      return response.unauthorized(responseData);
+    }
+
+    // Consulting
     try {
-      await User.findOrFail(payload.id);
+      // User.findOrFail(payload.id);
+      await axios.get(
+        `${Env.get("URI_SERVICE_AUTH")}${Env.get("API_AUTH_VERSION")}/users`,
+        {
+          headers: { authorization: headerAuthorization },
+        }
+      );
     } catch (error) {
       console.error(error);
-      responseData["message"] = "ID del Usuario no existe.";
-      return response.status(500).json(responseData);
+      return response.unauthorized({
+        error: "Debe de ingresar para realizar esta acción",
+      });
     }
 
     await next();
