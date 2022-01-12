@@ -94,8 +94,6 @@ export default class UsersController {
       // location: { ...location },
     };
 
-    delete detailsUser["user_id"];
-
     responseData[
       "message"
     ] += `${detailsUser["names"]["firstName"]} ${detailsUser["surnames"]["firstSurname"]}`;
