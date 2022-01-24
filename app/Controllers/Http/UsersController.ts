@@ -1,10 +1,8 @@
-// import bcrypt from "bcrypt";
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import DetailsUser from "App/Models/DetailsUser";
 import User from "App/Models/User";
 import AuditTrail from "App/Utils/classes/AuditTrail";
 import {
-  // IDataToken,
   IDataUserPayload,
   IDetailsUser,
   IUserPayload,
@@ -14,7 +12,6 @@ import { IUser } from "../../Utils/interfaces/user";
 import {
   base64encode,
   getPermitsAndRoles,
-  // hasPermit,
   messageError,
   sum,
   validatePagination,
@@ -26,10 +23,9 @@ import UserRole from "./../../Models/UserRole";
 import UserPermit from "./../../Models/UserPermit";
 import { Permit } from "App/Utils/_types";
 import { bcryptEncode } from "./../../Utils/functions/auth";
-// import { getAddressById } from "./../../Services/location";
-import Role from "./../../Models/Role";
 import { IPaginationValidated } from "App/Utils/interfaces/pagination";
 import { IResponseData } from "App/Utils/interfaces/index";
+import { getRoleId } from "App/Utils/functions/user";
 
 export default class UsersController {
   /**
@@ -100,14 +96,6 @@ export default class UsersController {
     responseData["results"] = { detailsUser, roles, permits };
 
     return response.status(200).json(responseData);
-  }
-
-  private async getRoleId(role: string): Promise<number> {
-    const usersRole = await Role.query()
-      .select(["id"])
-      .where("role_name", role);
-
-    return Number(usersRole[0]["$attributes"]["id"]);
   }
 
   /**
@@ -183,13 +171,16 @@ export default class UsersController {
     if (role) {
       try {
         const roleId: number =
-          typeof role === "string" ? await this.getRoleId(role) : Number(role);
+          typeof role === "string" ? await getRoleId(role) : Number(role);
+
         let users: UserRole[] = await UserRole.query()
           .select(["user_id"])
           .where("role_id", roleId)
           .where("status", 1)
           .limit(pagination["pageSize"])
           .offset(count);
+
+        console.log(users);
 
         results = [];
         await Promise.all(
