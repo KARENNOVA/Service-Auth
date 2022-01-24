@@ -135,8 +135,7 @@ export default class UsersController {
           .preload("status_info")
           .select(["user_id as u_id", "*"])
           .whereRaw(
-            `${pagination["search"]!["key"]} LIKE '%${
-              pagination["search"]!["value"]
+            `${pagination["search"]!["key"]} LIKE '%${pagination["search"]!["value"]
             }%'`
           )
           // .where(
@@ -411,14 +410,18 @@ export default class UsersController {
    */
   public async update({ response, request }: HttpContextContract) {
     const newData = request.body();
+
     const { id } = request.qs();
     const { token } = getToken(request.headers());
+
 
     try {
       if (typeof id === "string") {
         const detailsUser = await DetailsUser.findByOrFail("user_id", id);
+        let id_number: any = detailsUser.id_number;
         let dataUpdated: any = {
           ...newData.detailsUser,
+          id_number: newData.user.id_number
         };
 
         const auditTrail = new AuditTrail(token, detailsUser.audit_trail);
@@ -430,8 +433,8 @@ export default class UsersController {
           await detailsUser.merge({
             ...dataUpdated,
           });
-
           await detailsUser.save();
+
         } catch (error) {
           console.error(error);
           return response
@@ -439,16 +442,25 @@ export default class UsersController {
             .json({ message: "Error al actualizar: Servidor", error });
         }
 
-        if (newData.user.password) {
+        if (newData.user.id_number) {
           const user = await User.findByOrFail(
             "id_number",
-            base64encode(detailsUser.id_number)
-          );
+            await base64encode(id_number));
+
+        // }
+        //   console.log(detailsUser.id_number)
+
+        //   if (newData.user.password) {
+        //     const user = await User.findByOrFail(
+        //       "id_number",
+        //       base64encode(detailsUser.id_number)
+        //     );
 
           // Updating data
           try {
             await user.merge({
-              password: await bcryptEncode(newData.user.password),
+              // password: await bcryptEncode(newData.user.password),
+              id_number: await base64encode(newData.user.id_number),
               audit_trail: auditTrail.getAsJson(),
             });
             await user.save();
@@ -591,5 +603,5 @@ export default class UsersController {
   /**
    * destroy
    */
-  public async destroy({}: HttpContextContract) {}
+  public async destroy({ }: HttpContextContract) { }
 }
