@@ -422,7 +422,7 @@ export default class UsersController {
         const detailsUser = await DetailsUser.findByOrFail("user_id", id);
         console.log(detailsUser);
 
-        let id_number: any = detailsUser.id_number;
+        // let id_number: any = detailsUser.id_number;
         let dataUpdated: any = {
           ...newData.detailsUser,
           id_number: newData.user.id_number,
@@ -446,10 +446,12 @@ export default class UsersController {
         }
 
         if (newData.user.id_number) {
-          const user = await User.findByOrFail(
-            "id_number",
-            await base64encode(id_number)
-          );
+          // const user = await User.findByOrFail(
+          //   "id_number",
+          //   await base64encode(id_number)
+          // );
+
+          const user = await User.findOrFail(id);
 
           // }
           //   console.log(detailsUser.id_number)
