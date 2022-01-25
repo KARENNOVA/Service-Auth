@@ -7,7 +7,9 @@ export default class LogRequest {
     next: () => Promise<void>
   ) {
     console.log(
-      `[ ${moment()} | ${request.ip()} ]\t-> ${request.method()}:\t${request.url()}`
+      `[ ${moment().format(
+        "MMMM Do YYYY, h:mm:ss a"
+      )} | ${request.ip()} ]\t-> ${request.method()}:\t${request.url()}`
     );
     await next();
   }
