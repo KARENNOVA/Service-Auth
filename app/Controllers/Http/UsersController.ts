@@ -466,7 +466,7 @@ export default class UsersController {
           try {
             await user.merge({
               // password: await bcryptEncode(newData.user.password),
-              id_number: await base64encode(newData.user.id_number),
+              id_number: await base64encode(String(newData.user.id_number)),
               audit_trail: auditTrail.getAsJson(),
             });
             await user.save();
