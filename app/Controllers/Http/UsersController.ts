@@ -420,6 +420,8 @@ export default class UsersController {
     try {
       if (typeof id === "string") {
         const detailsUser = await DetailsUser.findByOrFail("user_id", id);
+        console.log(detailsUser);
+
         let id_number: any = detailsUser.id_number;
         let dataUpdated: any = {
           ...newData.detailsUser,
