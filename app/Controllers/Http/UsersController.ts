@@ -135,7 +135,8 @@ export default class UsersController {
           .preload("status_info")
           .select(["user_id as u_id", "*"])
           .whereRaw(
-            `${pagination["search"]!["key"]} LIKE '%${pagination["search"]!["value"]
+            `${pagination["search"]!["key"]} LIKE '%${
+              pagination["search"]!["value"]
             }%'`
           )
           // .where(
@@ -411,9 +412,10 @@ export default class UsersController {
   public async update({ response, request }: HttpContextContract) {
     const newData = request.body();
 
+    console.log(newData);
+
     const { id } = request.qs();
     const { token } = getToken(request.headers());
-
 
     try {
       if (typeof id === "string") {
@@ -421,11 +423,11 @@ export default class UsersController {
         let id_number: any = detailsUser.id_number;
         let dataUpdated: any = {
           ...newData.detailsUser,
-          id_number: newData.user.id_number
+          id_number: newData.user.id_number,
         };
 
         const auditTrail = new AuditTrail(token, detailsUser.audit_trail);
-        auditTrail.update({ ...dataUpdated }, detailsUser);
+        await auditTrail.update({ ...dataUpdated }, detailsUser);
         dataUpdated["audit_trail"] = auditTrail.getAsJson();
 
         // Updating data
@@ -434,7 +436,6 @@ export default class UsersController {
             ...dataUpdated,
           });
           await detailsUser.save();
-
         } catch (error) {
           console.error(error);
           return response
@@ -445,16 +446,17 @@ export default class UsersController {
         if (newData.user.id_number) {
           const user = await User.findByOrFail(
             "id_number",
-            await base64encode(id_number));
+            await base64encode(id_number)
+          );
 
-        // }
-        //   console.log(detailsUser.id_number)
+          // }
+          //   console.log(detailsUser.id_number)
 
-        //   if (newData.user.password) {
-        //     const user = await User.findByOrFail(
-        //       "id_number",
-        //       base64encode(detailsUser.id_number)
-        //     );
+          //   if (newData.user.password) {
+          //     const user = await User.findByOrFail(
+          //       "id_number",
+          //       base64encode(detailsUser.id_number)
+          //     );
 
           // Updating data
           try {
@@ -603,5 +605,5 @@ export default class UsersController {
   /**
    * destroy
    */
-  public async destroy({ }: HttpContextContract) { }
+  public async destroy({}: HttpContextContract) {}
 }
