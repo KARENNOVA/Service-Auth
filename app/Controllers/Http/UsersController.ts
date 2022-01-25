@@ -412,7 +412,16 @@ export default class UsersController {
   public async update({ response, request }: HttpContextContract) {
     const newData = request.body();
 
-    console.log(newData);
+    if (newData.user.id_number) {
+      try {
+        await User.findByOrFail(
+          "id_number",
+          await base64encode(String(newData.user.id_number))
+        );
+
+        return messageError(undefined, response, "Cédula ya existente.", 400);
+      } catch (error) {}
+    }
 
     const { id } = request.qs();
     const { token } = getToken(request.headers());
@@ -420,9 +429,7 @@ export default class UsersController {
     try {
       if (typeof id === "string") {
         const detailsUser = await DetailsUser.findByOrFail("user_id", id);
-        console.log(detailsUser);
 
-        // let id_number: any = detailsUser.id_number;
         let dataUpdated: any = {
           ...newData.detailsUser,
           id_number: newData.user.id_number,
@@ -446,11 +453,6 @@ export default class UsersController {
         }
 
         if (newData.user.id_number) {
-          // const user = await User.findByOrFail(
-          //   "id_number",
-          //   await base64encode(id_number)
-          // );
-
           const user = await User.findOrFail(id);
 
           // }
