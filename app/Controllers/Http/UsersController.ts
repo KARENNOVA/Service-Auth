@@ -170,8 +170,9 @@ export default class UsersController {
     // Filtro por Rol
     if (role) {
       try {
-        const roleId: number =
-          typeof role === "string" ? await getRoleId(role) : Number(role);
+        const roleId: number = Number.isInteger(role)
+          ? await getRoleId(role)
+          : Number(role);
 
         let users: UserRole[] = await UserRole.query()
           .select(["user_id"])
