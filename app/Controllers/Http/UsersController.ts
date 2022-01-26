@@ -1,10 +1,8 @@
-// import bcrypt from "bcrypt";
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import DetailsUser from "App/Models/DetailsUser";
 import User from "App/Models/User";
 import AuditTrail from "App/Utils/classes/AuditTrail";
 import {
-  // IDataToken,
   IDataUserPayload,
   IDetailsUser,
   IUserPayload,
@@ -14,7 +12,6 @@ import { IUser } from "../../Utils/interfaces/user";
 import {
   base64encode,
   getPermitsAndRoles,
-  // hasPermit,
   messageError,
   sum,
   validatePagination,
@@ -26,10 +23,12 @@ import UserRole from "./../../Models/UserRole";
 import UserPermit from "./../../Models/UserPermit";
 import { Permit } from "App/Utils/_types";
 import { bcryptEncode } from "./../../Utils/functions/auth";
-// import { getAddressById } from "./../../Services/location";
-import Role from "./../../Models/Role";
 import { IPaginationValidated } from "App/Utils/interfaces/pagination";
 import { IResponseData } from "App/Utils/interfaces/index";
+import { getRoleId } from "App/Utils/functions/user";
+import { Logger } from "App/Utils/classes/Logger";
+import { Manager } from "App/Utils/enums";
+// import Database from "@ioc:Adonis/Lucid/Database";
 
 export default class UsersController {
   /**
@@ -74,6 +73,8 @@ export default class UsersController {
       detailsUsers = await DetailsUser.query()
         .preload("status_info")
         .where("user_id", userId);
+
+      // await Database.manager.close('postgres')
     } catch (error) {
       console.error(error);
       responseData["message"] =
@@ -102,14 +103,6 @@ export default class UsersController {
     return response.status(200).json(responseData);
   }
 
-  private async getRoleId(role: string): Promise<number> {
-    const usersRole = await Role.query()
-      .select(["id"])
-      .where("role_name", role);
-
-    return Number(usersRole[0]["$attributes"]["id"]);
-  }
-
   /**
    * showAll
    */
@@ -118,6 +111,7 @@ export default class UsersController {
       message: "Lista de Usuarios completa. | Sin paginación.",
       status: 200,
     };
+    const logger = new Logger(request.ip(), Manager.UsersController);
     const { page, pageSize, role, key, value, first, only } = request.qs();
 
     let pagination: IPaginationValidated = { page: 0, pageSize: 1000000 };
@@ -147,7 +141,8 @@ export default class UsersController {
           .preload("status_info")
           .select(["user_id as u_id", "*"])
           .whereRaw(
-            `${pagination["search"]!["key"]} LIKE '%${pagination["search"]!["value"]
+            `${pagination["search"]!["key"]} LIKE '%${
+              pagination["search"]!["value"]
             }%'`
           )
           // .where(
@@ -158,6 +153,8 @@ export default class UsersController {
           .orderBy("id", "desc")
           .limit(pagination["pageSize"])
           .offset(count);
+
+      logger.register(157);
 
       if (only) {
         const num = only === "active" ? 1 : 0;
@@ -181,14 +178,18 @@ export default class UsersController {
     // Filtro por Rol
     if (role) {
       try {
-        const roleId: number =
-          typeof role === "string" ? await this.getRoleId(role) : Number(role);
+        const roleId: number = Number.isInteger(role)
+          ? await getRoleId(role)
+          : Number(role);
+
         let users: UserRole[] = await UserRole.query()
           .select(["user_id"])
           .where("role_id", roleId)
           .where("status", 1)
           .limit(pagination["pageSize"])
           .offset(count);
+
+        console.log(users);
 
         results = [];
         await Promise.all(
@@ -250,6 +251,7 @@ export default class UsersController {
         );
       }
       // responseData["total_results"] = detailsUser.length;
+      logger.register(157);
 
       // Count
       count = results.length;
@@ -420,21 +422,31 @@ export default class UsersController {
   public async update({ response, request }: HttpContextContract) {
     const newData = request.body();
 
+    if (newData.user.id_number) {
+      try {
+        await User.findByOrFail(
+          "id_number",
+          await base64encode(String(newData.user.id_number))
+        );
+
+        return messageError(undefined, response, "Cédula ya existente.", 400);
+      } catch (error) {}
+    }
+
     const { id } = request.qs();
     const { token } = getToken(request.headers());
-
 
     try {
       if (typeof id === "string") {
         const detailsUser = await DetailsUser.findByOrFail("user_id", id);
-        let id_number: any = detailsUser.id_number;
+
         let dataUpdated: any = {
           ...newData.detailsUser,
-          id_number: newData.user.id_number
+          id_number: newData.user.id_number,
         };
 
         const auditTrail = new AuditTrail(token, detailsUser.audit_trail);
-        auditTrail.update({ ...dataUpdated }, detailsUser);
+        await auditTrail.update({ ...dataUpdated }, detailsUser);
         dataUpdated["audit_trail"] = auditTrail.getAsJson();
 
         // Updating data
@@ -443,7 +455,6 @@ export default class UsersController {
             ...dataUpdated,
           });
           await detailsUser.save();
-
         } catch (error) {
           console.error(error);
           return response
@@ -451,19 +462,23 @@ export default class UsersController {
             .json({ message: "Error al actualizar: Servidor", error });
         }
 
-        if (newData.user.id_number !== id_number) {
-          console.log('entre')
-          const user = await User.findByOrFail(
-            "id_number",
-            await base64encode(id_number));
+        if (newData.user.id_number) {
+          const user = await User.findOrFail(id);
 
-            console.log(user)
+          // }
+          //   console.log(detailsUser.id_number)
+
+          //   if (newData.user.password) {
+          //     const user = await User.findByOrFail(
+          //       "id_number",
+          //       base64encode(detailsUser.id_number)
+          //     );
 
           // Updating data
           try {
             await user.merge({
               // password: await bcryptEncode(newData.user.password),
-              id_number: await base64encode(newData.user.id_number),
+              id_number: await base64encode(String(newData.user.id_number)),
               audit_trail: auditTrail.getAsJson(),
             });
             await user.save();
@@ -606,5 +621,5 @@ export default class UsersController {
   /**
    * destroy
    */
-  public async destroy({ }: HttpContextContract) { }
+  public async destroy({}: HttpContextContract) {}
 }

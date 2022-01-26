@@ -11,6 +11,7 @@ import {
 import User from "App/Models/User";
 import { IResponseData } from "App/Utils/interfaces";
 import { logInUser, registerUser } from "./../../Services/alcMedellin";
+import DetailsUser from "App/Models/DetailsUser";
 
 export default class AuthController {
   /**
@@ -107,6 +108,7 @@ export default class AuthController {
     let responseData: IResponseData = {
       message: "¡Inicio de Sesión exitoso!",
       status: 200,
+      results: { token: "", detailsUser: {} },
     };
     let { idNumber, password64, attemp = 0 } = request.body();
     let userEncryptBase64: string;
@@ -145,7 +147,36 @@ export default class AuthController {
           Env.get("APP_KEY") || "secret",
           { expiresIn: "1d" }
         );
-        responseData["results"] = token;
+
+        // Get Details User
+        let detailsUser: DetailsUser;
+
+        try {
+          detailsUser = (
+            await DetailsUser.query()
+              .select([
+                "user_id",
+                "names",
+                "surnames",
+                "id_type",
+                "id_number",
+                "email",
+                "phone_number",
+                "cellphone_number",
+              ])
+              .where("user_id", Number(user["$attributes"]["id"]))
+          )[0];
+          responseData["results"]["detailsUser"] = detailsUser;
+        } catch (error) {
+          return messageError(
+            error,
+            response,
+            "Errpr inesperado al obtener los datos del usuario.",
+            500
+          );
+        }
+
+        responseData["results"]["token"] = token;
 
         try {
           await user.merge({ online: true }).save();
