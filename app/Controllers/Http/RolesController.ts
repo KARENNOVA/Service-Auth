@@ -304,9 +304,17 @@ export default class RolesController {
   public async edit({}: HttpContextContract) {}
 
   public async update({ request, response }: HttpContextContract) {
+    // Ejemplo
+      const datapermits = request.body().permits;
+      const permitBD = [4,5,6,7,8,9];
+      const arreglos = datapermits.splitItems(permitBD)
+      console.log(arreglos);
+    // Ejemplo
+
     const { token } = getToken(request.headers());
     const payload: IPayloadRole = await request.validate(UpdateRoleValidator);
     const { id } = request.qs();
+
     let responseData: IResponseData = {
       message: "Rol actualizado correctamente.",
       status: 200,
