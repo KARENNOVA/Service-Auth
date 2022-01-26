@@ -34,18 +34,28 @@ export default class UsersController {
   /**
    * getDataUser
    */
-  public async getDataUser({ response, request }: HttpContextContract) {
+  public async getDataUser(
+    { response, request }: HttpContextContract,
+    id?: number
+  ) {
     let responseData: IResponseData = {
       message: "Detalles del Usuario ",
       status: 200,
     };
 
-    const { payloadToken } = getToken(request.headers());
     // let payloadToken: IDataToken = decodeJWT(token);
 
-    const { id } = request.qs();
+    let _id: number = 0,
+      userId: number = 0;
+    if (id) _id = id;
+    else {
+      const { id } = request.qs();
+      _id = id;
+      const { payloadToken } = getToken(request.headers());
+      userId = _id ? _id : payloadToken["id"];
+    }
 
-    let detailsUsers: DetailsUser[], detailsUser;
+    let detailsUser: DetailsUser;
 
     // const permitsAnsRolesPetitioner = await getPermitsAndRoles(
     //   request,
@@ -67,12 +77,15 @@ export default class UsersController {
 
     const { roles, permits } = await getPermitsAndRoles(request, response, id);
 
-    const userId = id ? id : payloadToken["id"];
-
     try {
-      detailsUsers = await DetailsUser.query()
-        .preload("status_info")
-        .where("user_id", userId);
+      detailsUser = (
+        await DetailsUser.query()
+          .preload("status_info")
+          .where("user_id", userId)
+      )[0];
+
+      if (detailsUser === undefined)
+        return messageError({}, response, "Usuario no existente.", 400);
 
       // await Database.manager.close('postgres')
     } catch (error) {
@@ -88,17 +101,17 @@ export default class UsersController {
     //   headerAuthorization
     // );
 
-    detailsUser = {
-      ...detailsUsers[0]["$attributes"],
+    let tmpDetailsUser = {
+      ...detailsUser["$attributes"],
       status:
-        detailsUsers[0]["$preloaded"]["status_info"]["$extras"]["status_name"],
+        detailsUser["$preloaded"]["status_info"]["$extras"]["status_name"],
       // location: { ...location },
     };
 
     responseData[
       "message"
-    ] += `${detailsUser["names"]["firstName"]} ${detailsUser["surnames"]["firstSurname"]}`;
-    responseData["results"] = { detailsUser, roles, permits };
+    ] += `${tmpDetailsUser["names"]["firstName"]} ${tmpDetailsUser["surnames"]["firstSurname"]}`;
+    responseData["results"] = { detailsUser: tmpDetailsUser, roles, permits };
 
     return response.status(200).json(responseData);
   }

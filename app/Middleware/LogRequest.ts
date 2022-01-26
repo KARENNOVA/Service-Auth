@@ -13,9 +13,6 @@ export default class LogRequest {
     const register = logger.register(13, request.method(), request.url());
     console.log(register);
 
-    const log = logger.getLog();
-    console.log(log);
-
     await next();
   }
 }

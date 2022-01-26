@@ -5,6 +5,7 @@ import {
   base64encode,
   bcryptCompare,
   generarAutentificacion,
+  getPermitsAndRoles,
   getToken,
   messageError,
 } from "App/Utils/functions";
@@ -149,6 +150,20 @@ export default class AuthController {
         );
 
         // Get Details User
+        // const { default: UsersController } = await import(
+        //   "App/Controllers/Http/UsersController"
+        // );
+
+        // const responseDataUser = await new UsersController().getDataUser(
+        //   {
+        //     request,
+        //     response,
+        //   } as HttpContextContract,
+        //   Number(user["$attributes"]["id"])
+        // );
+        // console.log("responseDataUser");
+        // console.log(responseDataUser);
+
         let detailsUser: DetailsUser;
 
         try {
@@ -175,6 +190,14 @@ export default class AuthController {
             500
           );
         }
+
+        const { roles, permits } = await getPermitsAndRoles(
+          request,
+          response,
+          Number(user["$attributes"]["id"])
+        );
+        responseData["results"]["roles"] = roles;
+        responseData["results"]["permits"] = permits;
 
         responseData["results"]["token"] = token;
 
