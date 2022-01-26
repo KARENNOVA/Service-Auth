@@ -451,19 +451,13 @@ export default class UsersController {
             .json({ message: "Error al actualizar: Servidor", error });
         }
 
-        if (newData.user.id_number) {
+        if (newData.user.id_number !== id_number) {
+          console.log('entre')
           const user = await User.findByOrFail(
             "id_number",
             await base64encode(id_number));
 
-        // }
-        //   console.log(detailsUser.id_number)
-
-        //   if (newData.user.password) {
-        //     const user = await User.findByOrFail(
-        //       "id_number",
-        //       base64encode(detailsUser.id_number)
-        //     );
+            console.log(user)
 
           // Updating data
           try {

@@ -91,11 +91,11 @@ export default class PermitsController {
     try {
       const permitsByRole = await Database.rawQuery(`
       select json_build_object('id',rp.rol_id, 'name', r."name") as role , json_agg(jsonb_build_object('id', rp.permit_id, 'name', p."name")) as permits
-      from rol_permits rp 
+      from rol_permits rp
       LEFT OUTER JOIN roles r on rp.rol_id = r.id
-      LEFT OUTER JOIN permits p on rp.permit_id = p.id 
-      where rp.status = 1 
-        and rp.rol_id = ${id} 
+      LEFT OUTER JOIN permits p on rp.permit_id = p.id
+      where rp.status = 1
+        and rp.rol_id = ${id}
       group by rp.rol_id, r."name" ;
     `);
 
