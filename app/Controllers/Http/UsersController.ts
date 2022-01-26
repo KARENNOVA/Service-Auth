@@ -26,6 +26,7 @@ import { bcryptEncode } from "./../../Utils/functions/auth";
 import { IPaginationValidated } from "App/Utils/interfaces/pagination";
 import { IResponseData } from "App/Utils/interfaces/index";
 import { getRoleId } from "App/Utils/functions/user";
+// import Database from "@ioc:Adonis/Lucid/Database";
 
 export default class UsersController {
   /**
@@ -70,6 +71,8 @@ export default class UsersController {
       detailsUsers = await DetailsUser.query()
         .preload("status_info")
         .where("user_id", userId);
+
+      // await Database.manager.close('postgres')
     } catch (error) {
       console.error(error);
       responseData["message"] =
