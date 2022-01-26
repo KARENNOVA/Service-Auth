@@ -26,6 +26,8 @@ import { bcryptEncode } from "./../../Utils/functions/auth";
 import { IPaginationValidated } from "App/Utils/interfaces/pagination";
 import { IResponseData } from "App/Utils/interfaces/index";
 import { getRoleId } from "App/Utils/functions/user";
+import { Logger } from "App/Utils/classes/Logger";
+import { Manager } from "App/Utils/enums";
 // import Database from "@ioc:Adonis/Lucid/Database";
 
 export default class UsersController {
@@ -109,6 +111,7 @@ export default class UsersController {
       message: "Lista de Usuarios completa. | Sin paginación.",
       status: 200,
     };
+    const logger = new Logger(request.ip(), Manager.UsersController);
     const { page, pageSize, role, key, value, first, only } = request.qs();
 
     let pagination: IPaginationValidated = { page: 0, pageSize: 1000000 };
@@ -150,6 +153,8 @@ export default class UsersController {
           .orderBy("id", "desc")
           .limit(pagination["pageSize"])
           .offset(count);
+
+      logger.register(157);
 
       if (only) {
         const num = only === "active" ? 1 : 0;
@@ -246,6 +251,7 @@ export default class UsersController {
         );
       }
       // responseData["total_results"] = detailsUser.length;
+      logger.register(157);
 
       // Count
       count = results.length;
