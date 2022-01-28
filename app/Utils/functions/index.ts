@@ -61,19 +61,6 @@ export const messageError = (
   };
   responseData.error = { name: error.name, message: error.message };
 
-  // Error 23505
-  if (error.routine === "_bt_check_unique")
-    responseData.message = "Valor ya existente.";
-  if (error.type === "user_key_duplicated") {
-    responseData.message =
-      'El usuario ya existe.\nSi no recuerda la contraseña ir a la sección de "¿Olvidó su Contraseña?"';
-    responseData.status = 400;
-  }
-
-  if (Number(error.code) === 23505)
-    responseData.message =
-      "Error interno controlable. Realice la consulta hasta que le funcione. :)";
-
   if (responseData["status"] === 401)
     responseData["error"] = {
       name: "Unauthorized",
@@ -87,6 +74,26 @@ export const messageError = (
       message:
         "Sintaxis inválida. El servidor no puede entender la información solicitada o no enviada.",
     };
+
+  // Error 23505
+  if (error.routine === "_bt_check_unique")
+    responseData.message = "Valor ya existente.";
+  if (error.type === "user_key_duplicated") {
+    responseData.message =
+      'El usuario ya existe.\nSi no recuerda la contraseña ir a la sección de "¿Olvidó su Contraseña?"';
+    responseData.status = 400;
+  }
+
+  if (Number(error.code) === 23505) {
+    responseData["error"] = {
+      name: "Primary / Unique key duplicated.",
+      message: "La llave primaria o única no puede ser duplicada.",
+      code: 23505,
+    };
+    if (!initialMessage)
+      responseData.message =
+        "Error interno controlable. Realice la consulta hasta que le funcione. :)";
+  }
 
   console.error(error);
   return response.status(responseData["status"]).json(responseData);
@@ -207,6 +214,8 @@ export const validatePagination = (
 export const sum = (num1: number, num2: number): number => {
   return num1 + num2;
 };
+
+export const timer = (ms) => new Promise((res) => setTimeout(res, ms));
 
 export * from "./auth";
 export * from "./permit";

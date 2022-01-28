@@ -76,8 +76,14 @@ export default class RolesController {
   /**
    * assign
    */
-  public async assign({ request, response }: HttpContextContract) {
-    const roles = request.body()["roles"];
+  public async assign(
+    { request, response }: HttpContextContract,
+    rolesToCreate?: any[]
+  ) {
+    let roles;
+    if (rolesToCreate) roles = rolesToCreate;
+    else roles = request.body()["roles"];
+
     const { to } = request.qs();
 
     const { token } = getToken(request.headers());
@@ -97,6 +103,9 @@ export default class RolesController {
       });
 
       const results = await UserRole.createMany(tmp);
+
+      if (rolesToCreate) return results;
+
       return response.status(200).json({
         message: "Roles asignados.",
         results,
@@ -165,7 +174,7 @@ export default class RolesController {
     return response.status(200).json(dataResponse);
   }
 
-  public async showAll({ response, request }: HttpContextContract) {
+  public async list({ response, request }: HttpContextContract) {
     let responseData: IResponseData = {
       message: "Lista de Roles completa. | Sin paginación.",
       status: 200,
@@ -305,10 +314,10 @@ export default class RolesController {
 
   public async update({ request, response }: HttpContextContract) {
     // Ejemplo
-      const datapermits = request.body().permits;
-      const permitBD = [4,5,6,7,8,9];
-      const arreglos = datapermits.splitItems(permitBD)
-      console.log(arreglos);
+    const datapermits = request.body().permits;
+    const permitBD = [4, 5, 6, 7, 8, 9];
+    const arreglos = datapermits.splitItems(permitBD);
+    console.log(arreglos);
     // Ejemplo
 
     const { token } = getToken(request.headers());

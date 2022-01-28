@@ -186,7 +186,7 @@ export default class AuthController {
           return messageError(
             error,
             response,
-            "Errpr inesperado al obtener los datos del usuario.",
+            "Error inesperado al obtener los datos del usuario.",
             500
           );
         }

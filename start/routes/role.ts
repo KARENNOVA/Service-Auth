@@ -11,7 +11,7 @@ Route.group(() => {
 
     if (ctx.request.qs().id) return new RolesController().show(ctx);
 
-    return new RolesController().showAll(ctx);
+    return new RolesController().list(ctx);
   });
 
   // POST

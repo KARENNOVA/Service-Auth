@@ -13,13 +13,16 @@
 declare global {
   interface Array<T> {
     diff(arr: T[]): T[];
-    splitItems(arr: any[]);
+    splitItems(arr: any[]): {
+      oldwItems: any[];
+      newItems: any[];
+      deletedItems: any[];
+    };
   }
 
   interface String {
     capitalize(): String;
   }
-
 }
 
 Array.prototype.diff = function (a) {
@@ -27,41 +30,12 @@ Array.prototype.diff = function (a) {
     return a.indexOf(i) < 0;
   });
 };
-
-if (!Array.prototype.splitItems) {
+if (!Array.prototype.splitItems)
   Array.prototype.splitItems = function (oldwItems) {
-    let newItems: any[] = [];
-    let deletedItems: any[] = [];
-    this.map(p => {
-      if (typeof p === "number") {
-        if (!oldwItems.includes(p)) {
-          newItems = [...newItems, p]
-        }
-      } else if (typeof p === "object") {
-        if (!oldwItems.includes(p.id)){
-          newItems = [...newItems,  p]
-        }
-      }
-    });
-    oldwItems.map(p => {
-      if (typeof p === "number") {
-        if(!this.includes(p)){
-          deletedItems = [...deletedItems, p];
-        }
-      } else if (typeof p === "object") {
-        if(!this.includes(p)){
-          deletedItems = [...deletedItems, p];
-        }
-      }
-    })
-    // newItems = this.diff(oldwItems);
-    // deletedItems = oldwItems.diff(this);
-    return { oldwItems, newItems, deletedItems }
+    const newItems = this.diff(oldwItems);
+    const deletedItems = oldwItems.diff(this);
+    return { oldwItems, newItems, deletedItems };
   };
-}
-
-
-
 if (!String.prototype.capitalize) {
   String.prototype.capitalize = function () {
     return this.charAt(0).toUpperCase() + this.slice(1);

@@ -14,6 +14,7 @@ import {
   getPermitsAndRoles,
   messageError,
   sum,
+  timer,
   validatePagination,
   validatePermit,
 } from "App/Utils/functions";
@@ -28,6 +29,7 @@ import { IResponseData } from "App/Utils/interfaces/index";
 import { getRoleId } from "App/Utils/functions/user";
 import { Logger } from "App/Utils/classes/Logger";
 import { Manager } from "App/Utils/enums";
+import Database from "@ioc:Adonis/Lucid/Database";
 // import Database from "@ioc:Adonis/Lucid/Database";
 
 export default class UsersController {
@@ -433,6 +435,7 @@ export default class UsersController {
    * update
    */
   public async update({ response, request }: HttpContextContract) {
+    const logger = new Logger(request.ip(), Manager.UsersController);
     const newData = request.body();
 
     if (newData.user.id_number) {
@@ -442,77 +445,272 @@ export default class UsersController {
           await base64encode(String(newData.user.id_number))
         );
 
-        return messageError(undefined, response, "Cédula ya existente.", 400);
+        return messageError(
+          { code: 23505 },
+          response,
+          "Cédula ya existente.",
+          400
+        );
       } catch (error) {}
     }
 
+    let responseData: IResponseData = {
+      message: "Usuario actualizado correctamente.",
+      status: 200,
+      results: {},
+    };
+
     const { id } = request.qs();
+
+    if (!id)
+      return messageError(
+        undefined,
+        response,
+        "Ingrese el ID del Usuario a actualizar.",
+        400
+      );
+
     const { token } = getToken(request.headers());
 
-    try {
-      if (typeof id === "string") {
-        const detailsUser = await DetailsUser.findByOrFail("user_id", id);
+    let userUpdated;
 
-        let dataUpdated: any = {
-          ...newData.detailsUser,
-          id_number: newData.user.id_number,
-        };
-
-        const auditTrail = new AuditTrail(token, detailsUser.audit_trail);
-        await auditTrail.update({ ...dataUpdated }, detailsUser);
-        dataUpdated["audit_trail"] = auditTrail.getAsJson();
-
-        // Updating data
-        try {
-          await detailsUser.merge({
-            ...dataUpdated,
-          });
-          await detailsUser.save();
-        } catch (error) {
-          console.error(error);
-          return response
-            .status(500)
-            .json({ message: "Error al actualizar: Servidor", error });
-        }
-
-        if (newData.user.id_number) {
-          const user = await User.findOrFail(id);
-
-          // }
-          //   console.log(detailsUser.id_number)
-
-          //   if (newData.user.password) {
-          //     const user = await User.findByOrFail(
-          //       "id_number",
-          //       base64encode(detailsUser.id_number)
-          //     );
-
-          // Updating data
-          try {
-            await user.merge({
-              // password: await bcryptEncode(newData.user.password),
-              id_number: await base64encode(String(newData.user.id_number)),
-              audit_trail: auditTrail.getAsJson(),
-            });
-            await user.save();
-          } catch (error) {
-            console.error(error);
-            return response
-              .status(500)
-              .json({ message: "Error al actualizar: Servidor", error });
-          }
-        }
-        return response.status(200).json({
-          message: `Usuario ${detailsUser.names.firstName} actualizado satisfactoriamente`,
-          results: detailsUser,
-        });
+    if (newData.user) {
+      let user: User;
+      try {
+        user = await User.findOrFail(id);
+      } catch (error) {
+        return messageError(
+          error,
+          response,
+          "Error inesperado al obtener el Usuario.",
+          500
+        );
       }
+
+      let dataToUpdate: any = {};
+
+      if (newData.user.id_number) {
+        dataToUpdate["id_number"] = await base64encode(
+          String(newData.user.id_number)
+        );
+      }
+
+      if (newData.user.password)
+        dataToUpdate["password"] = await bcryptEncode(newData.user.password);
+
+      const auditTrail = new AuditTrail(token, user.audit_trail);
+      await auditTrail.update({ ...dataToUpdate }, user);
+      dataToUpdate["audit_trail"] = auditTrail.getAsJson();
+
+      // Updating data
+      try {
+        await user.merge({ ...dataToUpdate });
+        userUpdated = await user.save();
+        responseData["results"]["user"] = userUpdated["$attributes"];
+      } catch (error) {
+        return messageError(
+          error,
+          response,
+          "Error inesperado al actualizar los datos del Usuario.",
+          500
+        );
+      }
+    }
+
+    let detailsUser: DetailsUser;
+    try {
+      detailsUser = await DetailsUser.findByOrFail("user_id", id);
+    } catch (error) {
+      return messageError(
+        error,
+        response,
+        "Error inesperado al obtener los detalles del usuario.",
+        500
+      );
+    }
+
+    let dataToUpdate: any = {
+      ...newData.detailsUser,
+    };
+
+    if (newData.user)
+      dataToUpdate["id_number"] = String(newData.user.id_number);
+
+    delete dataToUpdate["user_id"];
+
+    const auditTrail = new AuditTrail(token, detailsUser.audit_trail);
+    await auditTrail.update({ ...dataToUpdate }, detailsUser);
+    dataToUpdate["audit_trail"] = auditTrail.getAsJson();
+
+    // Updating data
+    try {
+      await detailsUser.merge({
+        ...dataToUpdate,
+      });
+      responseData["results"]["detailsUser"] = (await detailsUser.save())[
+        "$attributes"
+      ];
     } catch (error) {
       console.error(error);
       return response
         .status(500)
-        .json({ message: "Error interno: Servidor", error });
+        .json({ message: "Error al actualizar: Servidor", error });
     }
+
+    // Updating Permits and Roles
+    const { permits, roles } = await getPermitsAndRoles(
+      request,
+      response,
+      userUpdated["id"]
+    );
+
+    logger.log(permits, 560, true);
+    logger.log(roles, 560, true);
+
+    let newPermits = newData["permits"];
+    const permitsSplited = newPermits.splitItems(permits);
+    logger.log(permitsSplited["newItems"], 571, true);
+    logger.log(permitsSplited["oldwItems"], 571, true);
+    logger.log(permitsSplited["deletedItems"], 571, true);
+    if (permitsSplited["deletedItems"].length > 0) {
+      await Promise.all(
+        permitsSplited["deletedItems"].map(async (permit) => {
+          try {
+            const userPermit = (
+              await UserPermit.query()
+                .where("user_id", Number(userUpdated["id"]))
+                .where("permit_id", Number(permit["id"]))
+                .debug(true)
+            )[0];
+
+            logger.log(userPermit, 582, true);
+
+            if (userPermit !== undefined) {
+              await userPermit.delete();
+            }
+          } catch (error) {
+            return messageError(
+              error,
+              response,
+              `Error inesperado al eliminar el permiso con ID ${permit}`,
+              500
+            );
+          } finally {
+            await Database.manager.closeAll();
+          }
+        })
+      );
+    }
+
+    // if (permitsSplited["newItems"].length > 0) {
+    //   const { default: PermitsController } = await import(
+    //     "App/Controllers/Http/PermitsController"
+    //   );
+    //   const _newPermits = await new PermitsController().assign(
+    //     { response, request } as HttpContextContract,
+    //     permitsSplited["newItems"],
+    //     userUpdated["id"]
+    //   );
+    //   console.log(_newPermits);
+
+    //   responseData["results"]["permits"] = _newPermits;
+    // }
+
+    // if (permitsSplited["oldwItems"].length > 0) {
+    //   await Promise.all(
+    //     permitsSplited["oldwItems"].map(async (permit) => {
+    //       try {
+    //         const userPermit = (
+    //           await UserPermit.query()
+    //             .where("user_id", Number(userUpdated["id"]))
+    //             .where("permit_id", Number(permit["id"]))
+    //         )[0];
+
+    //         let tmp = newPermits.filter((permit) => permit.id === permit);
+    //         const _newPermits = await userPermit.merge({ ...tmp }).save();
+    //         responseData["results"]["permits"].push(_newPermits);
+    //       } catch (error) {
+    //         return messageError(
+    //           error,
+    //           response,
+    //           `Error inesperado al eliminar el permiso con ID ${permit}`,
+    //           500
+    //         );
+    //       }
+    //     })
+    //   );
+    // }
+
+    // let newRoles = newData["roles"];
+    // const rolesSplited = newRoles.splitItems(roles);
+
+    // if (rolesSplited["deletedItems"].length > 0) {
+    //   await Promise.all(
+    //     rolesSplited["deletedItems"].map(async (permit) => {
+    //       try {
+    //         const userRole = (
+    //           await UserRole.query()
+    //             .where("user_id", userUpdated["id"])
+    //             .where("role_id", permit["id"])
+    //         )[0];
+
+    //         await userRole.delete();
+    //       } catch (error) {
+    //         return messageError(
+    //           error,
+    //           response,
+    //           `Error inesperado al eliminar el rol con ID ${permit}`,
+    //           500
+    //         );
+    //       }
+    //     })
+    //   );
+    // }
+
+    // if (rolesSplited["newItems"].length > 0) {
+    //   const { default: RolesController } = await import(
+    //     "App/Controllers/Http/RolesController"
+    //   );
+    //   const _newRoles = await new RolesController().assign(
+    //     { response, request } as HttpContextContract,
+    //     rolesSplited["newItems"]
+    //   );
+
+    //   responseData["results"]["roles"] = _newRoles;
+    // }
+
+    // if (rolesSplited["oldwItems"].length > 0) {
+    //   await Promise.all(
+    //     rolesSplited["oldwItems"].map(async (role) => {
+    //       try {
+    //         const userRole = (
+    //           await UserRole.query()
+    //             .where("user_id", userUpdated["id"])
+    //             .where("permit_id", role)
+    //         )[0];
+
+    //         let tmp = newRoles.filter((role) => role.id === role);
+    //         const _newRoles = await userRole.merge({ ...tmp }).save();
+    //         responseData["results"]["permits"].push(_newRoles);
+    //       } catch (error) {
+    //         return messageError(
+    //           error,
+    //           response,
+    //           `Error inesperado al eliminar el rol con ID ${role}`,
+    //           500
+    //         );
+    //       }
+    //     })
+    //   );
+    // }
+
+    delete responseData["results"]["user"]["audit_trail"];
+    delete responseData["results"]["detailsUser"]["audit_trail"];
+    responseData[
+      "message"
+    ] = `Usuario ${detailsUser.names.firstName} actualizado satisfactoriamente`;
+
+    return response.status(responseData["status"]).json(responseData);
   }
 
   /**

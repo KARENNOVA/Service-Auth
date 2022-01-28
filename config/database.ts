@@ -46,11 +46,11 @@ const databaseConfig: DatabaseConfig = {
         naturalSort: true,
       },
       pool: {
-        min: 2,
-        max: 30,
+        min: 1,
+        max: 1,
       },
-      healthCheck: false,
-      debug: false,
+      healthCheck: true,
+      debug: true,
     },
   },
 };

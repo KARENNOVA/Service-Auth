@@ -18,7 +18,11 @@ export default class PermitsController {
   /**
    * Assign permits to one User by ID User
    */
-  public async assign({ request, response }: HttpContextContract) {
+  public async assign(
+    { request, response }: HttpContextContract,
+    permitsToCreate?: any[],
+    _to?: number
+  ) {
     // Validations
     const { token } = getToken(request.headers());
 
@@ -38,25 +42,35 @@ export default class PermitsController {
       );
     }
 
-    const { to } = request.qs();
+    let to: number;
+    if (_to) to = _to;
+    else {
+      const qs = request.qs();
 
-    if (!to)
-      return messageError(
-        undefined,
-        response,
-        "Ingrese el ID del usuario. [ to ]",
-        400
-      );
+      if (!qs["to"])
+        return messageError(
+          undefined,
+          response,
+          "Ingrese el ID del usuario. [ to ]",
+          400
+        );
+
+      to = qs["to"];
+    }
     // END Validations
 
     let responseData: IResponseData = {
       message: `Permisos asignados al usuario con ID: ${to}`,
       status: 200,
     };
-    const permits = request.body()["permits"];
+
+    let permits: any[] = [];
+    if (permitsToCreate) permits = permitsToCreate;
+    else permits = request.body()["permits"];
 
     const auditTrail = new AuditTrail(token);
     await auditTrail.init();
+    console.log(permits);
 
     try {
       let dataToInsert: IUserPermit[] = [];
@@ -73,6 +87,7 @@ export default class PermitsController {
 
       responseData["results"] = results;
 
+      if (permitsToCreate) return responseData["results"];
       return response.status(responseData["status"]).json(responseData);
     } catch (error) {
       return messageError(
