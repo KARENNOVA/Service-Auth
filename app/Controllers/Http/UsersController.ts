@@ -155,8 +155,7 @@ export default class UsersController {
           .preload("status_info")
           .select(["user_id as u_id", "*"])
           .whereRaw(
-            `${pagination["search"]!["key"]} LIKE '%${
-              pagination["search"]!["value"]
+            `${pagination["search"]!["key"]} LIKE '%${pagination["search"]!["value"]
             }%'`
           )
           // .where(
@@ -442,21 +441,21 @@ export default class UsersController {
     const logger = new Logger(request.ip(), Manager.UsersController);
     const newData = request.body();
 
-    if (newData.user.id_number) {
-      try {
-        await User.findByOrFail(
-          "id_number",
-          await base64encode(String(newData.user.id_number))
-        );
+    // if (newData.user.id_number) {
+    //   try {
+    //     await User.findByOrFail(
+    //       "id_number",
+    //       await base64encode(String(newData.user.id_number))
+    //     );
 
-        return messageError(
-          { code: 23505 },
-          response,
-          "Cédula ya existente.",
-          400
-        );
-      } catch (error) {}
-    }
+    //     return messageError(
+    //       { code: 23505 },
+    //       response,
+    //       "Cédula ya existente.",
+    //       400
+    //     );
+    //   } catch (error) {}
+    // }
 
     let responseData: IResponseData = {
       message: "Usuario actualizado correctamente.",
@@ -562,49 +561,76 @@ export default class UsersController {
     }
 
     // Updating Permits and Roles
+    // const { permits, roles }
     const { permits, roles } = await getPermitsAndRoles(
       request,
       response,
       userUpdated["id"]
     );
 
-    logger.log(permits, 560, true);
-    logger.log(roles, 560, true);
 
     let newPermits = newData["permits"];
-    const permitsSplited = newPermits.splitItems(permits);
-    logger.log(permitsSplited["newItems"], 571, true);
-    logger.log(permitsSplited["oldwItems"], 571, true);
-    logger.log(permitsSplited["deletedItems"], 571, true);
-    if (permitsSplited["deletedItems"].length > 0) {
-      await Promise.all(
-        permitsSplited["deletedItems"].map(async (permit) => {
-          try {
-            const userPermit = (
+
+    const permitsSplited = newPermits.splitItems(permits.map(p => p.id));
+      console.log(permitsSplited)
+    if (permitsSplited.deletedItems.length > 0) {
+      try {
+        const existsPermits = await Promise.all(
+          permitsSplited.deletedItems.map(async (p) => {
+            console.log(p)
+            const a = (
               await UserPermit.query()
-                .where("user_id", Number(userUpdated["id"]))
-                .where("permit_id", Number(permit["id"]))
+                .where("user_id", Number(userUpdated.id))
+                .where("permit_id", Number(p))
                 .debug(true)
             )[0];
+            return a;
+          })
+        );
 
-            logger.log(userPermit, 582, true);
-
-            if (userPermit !== undefined) {
-              await userPermit.delete();
-            }
-          } catch (error) {
-            return messageError(
-              error,
-              response,
-              `Error inesperado al eliminar el permiso con ID ${permit}`,
-              500
-            );
-          } finally {
-            await Database.manager.closeAll();
-          }
-        })
-      );
+        // if (existsPermits[0] !== undefined) {
+        //   return messageError(
+        //     undefined,
+        //     response,
+        //     "El contrato ya existe.",
+        //     400
+        //   );
+        // }
+      } catch (error) {
+        return messageError(error, response);
+      }
     }
+
+    // if (permitsSplited["deletedItems"].length > 0) {
+    //   console.log('mayor')
+    //   await Promise.all(
+    //     permitsSplited["deletedItems"].map(async (permit) => {
+    //       try {
+    //         const userPermit = (
+    //           await UserPermit.query()
+    //             .where("user_id", Number(userUpdated["id"]))
+    //             .where("permit_id", Number(permit))
+    //             .debug(true)
+    //         )[0];
+
+    //         logger.log(userPermit, 582, true);
+
+    //         if (userPermit !== undefined) {
+    //           await userPermit.delete();
+    //         }
+    //       } catch (error) {
+    //         return messageError(
+    //           error,
+    //           response,
+    //           `Error inesperado al eliminar el permiso con ID ${permit}`,
+    //           500
+    //         );
+    //       } finally {
+    //         await Database.manager.closeAll();
+    //       }
+    //     })
+    //   );
+    // }
 
     // if (permitsSplited["newItems"].length > 0) {
     //   const { default: PermitsController } = await import(
@@ -836,5 +862,5 @@ export default class UsersController {
   /**
    * destroy
    */
-  public async destroy({}: HttpContextContract) {}
+  public async destroy({ }: HttpContextContract) { }
 }
