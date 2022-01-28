@@ -14,7 +14,6 @@ import {
   getPermitsAndRoles,
   messageError,
   sum,
-  timer,
   validatePagination,
   validatePermit,
 } from "App/Utils/functions";
