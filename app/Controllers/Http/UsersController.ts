@@ -203,30 +203,35 @@ export default class UsersController {
           .limit(pagination["pageSize"])
           .offset(count);
 
-        console.log(users);
-
         results = [];
         await Promise.all(
           users.map(async (user) => {
-            let tmpDetailsUser = await DetailsUser.query()
-              .preload("status_info")
-              .where("user_id", user["$attributes"]["user_id"])
-              .orderBy("id", "desc")
-              .limit(pagination["pageSize"])
-              .offset(count);
+            let tmpDetailsUser = (
+              await DetailsUser.query()
+                .preload("status_info")
+                .where("user_id", user["$attributes"]["user_id"])
+            )[0];
+
+            const sid = (
+              await User.query()
+                .select(["sid"])
+                .where("id", user["$attributes"]["user_id"])
+            )[0]["sid"];
 
             if (only) {
               const num = only === "active" ? 1 : 0;
-              tmpDetailsUser = await DetailsUser.query()
-                .preload("status_info")
-                .select(["user_id as u_id", "*"])
-                .where("status", num)
-                .orderBy("id", "desc")
-                .limit(pagination["pageSize"])
-                .offset(count);
+              tmpDetailsUser = (
+                await DetailsUser.query()
+                  .preload("status_info")
+                  .select(["user_id as u_id", "*"])
+                  .where("status", num)
+              )[0];
             }
 
-            if (tmpDetailsUser.length > 0) results.push(tmpDetailsUser[0]);
+            tmpDetailsUser["$attributes"]["sid"] = sid;
+            results.push({
+              ...tmpDetailsUser,
+            });
           })
         );
 
