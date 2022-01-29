@@ -10,7 +10,7 @@ import {
 import CreateUserValidator from "App/Validators/CreateUserValidator";
 import { IUser } from "../../Utils/interfaces/user";
 import {
-  base64encode,
+  base64encode, generalDeleteMultiple,
   getPermitsAndRoles,
   messageError,
   sum,
@@ -28,8 +28,6 @@ import { IResponseData } from "App/Utils/interfaces/index";
 import { getRoleId } from "App/Utils/functions/user";
 import { Logger } from "App/Utils/classes/Logger";
 import { Manager } from "App/Utils/enums";
-import Database from "@ioc:Adonis/Lucid/Database";
-// import Database from "@ioc:Adonis/Lucid/Database";
 
 export default class UsersController {
   /**
@@ -46,10 +44,11 @@ export default class UsersController {
 
     // let payloadToken: IDataToken = decodeJWT(token);
 
-    let _id: number = 0,
-      userId: number = 0;
-    if (id) _id = id;
-    else {
+    let _id: number = 0;
+    let userId: number = 0;
+    if (id) {
+      _id = id;
+    } else {
       const { id } = request.qs();
       _id = id;
       const { payloadToken } = getToken(request.headers());
@@ -76,7 +75,7 @@ export default class UsersController {
     //   return response.status(400).json(responseData);
     // }
 
-    const { roles, permits } = await getPermitsAndRoles(request, response, id);
+    const { roles, permits } = await getPermitsAndRoles(request, response, _id);
 
     try {
       detailsUser = (
@@ -438,7 +437,7 @@ export default class UsersController {
    * update
    */
   public async update({ response, request }: HttpContextContract) {
-    const logger = new Logger(request.ip(), Manager.UsersController);
+    // const logger = new Logger(request.ip(), Manager.UsersController);
     const newData = request.body();
 
     // if (newData.user.id_number) {
@@ -447,7 +446,6 @@ export default class UsersController {
     //       "id_number",
     //       await base64encode(String(newData.user.id_number))
     //     );
-
     //     return messageError(
     //       { code: 23505 },
     //       response,
@@ -562,44 +560,113 @@ export default class UsersController {
 
     // Updating Permits and Roles
     // const { permits, roles }
-    const { permits, roles } = await getPermitsAndRoles(
-      request,
-      response,
-      userUpdated["id"]
-    );
 
 
-    let newPermits = newData["permits"];
-
-    const permitsSplited = newPermits.splitItems(permits.map(p => p.id));
-      console.log(permitsSplited)
-    if (permitsSplited.deletedItems.length > 0) {
+    const compute_user_permit = async (user_id, permit_id) => {
       try {
-        const existsPermits = await Promise.all(
-          permitsSplited.deletedItems.map(async (p) => {
-            console.log(p)
-            const a = (
-              await UserPermit.query()
-                .where("user_id", Number(userUpdated.id))
-                .where("permit_id", Number(p))
-                .debug(true)
-            )[0];
-            return a;
-          })
-        );
-
-        // if (existsPermits[0] !== undefined) {
-        //   return messageError(
-        //     undefined,
-        //     response,
-        //     "El contrato ya existe.",
-        //     400
-        //   );
-        // }
-      } catch (error) {
-        return messageError(error, response);
+        const auditTrail = new AuditTrail(token);
+        await auditTrail.init();
+        const _json = auditTrail.getAsJson();
+        return  {
+          user_id,
+          permit_id,
+          status: 1,
+          audit_trail: _json
+        }
+      }catch (e) {
+        return  Promise.reject(e)
       }
     }
+
+    const compute_user_rol = async (user_id, role_id) => {
+      try {
+        const auditTrail = new AuditTrail(token);
+        await auditTrail.init();
+        const _json = auditTrail.getAsJson();
+        return  {
+          user_id,
+          role_id,
+          status: 1,
+          audit_trail: _json
+        }
+      }catch (e) {
+        return  Promise.reject(e)
+      }
+    }
+
+    try{
+      let newPermits = newData["permits"];
+      let newRoles = newData["roles"];
+
+      const user_permits_to_create: any[] = await Promise.all(newPermits.map((permit) => {
+        return compute_user_permit(id, permit)
+      }))
+
+      const user_roles_to_create: any[] = await Promise.all(newRoles.map((role) => {
+        return compute_user_rol(id, role)
+      }))
+
+      // borra los user_roles del usuario
+      await generalDeleteMultiple("user_roles", {column: "user_id", value: id});
+      if(user_roles_to_create.length > 0) {
+        UserRole.createMany(user_roles_to_create)
+      }
+      // borra los user_permits del usuario
+      await generalDeleteMultiple("user_permits", {column: "user_id", value: id})
+      if(user_permits_to_create.length > 0) {
+        UserPermit.createMany(user_permits_to_create)
+      }
+    }catch (e) {
+      console.error(e);
+      return response
+        .status(500)
+        .json({ message: "Error al actualizar: Servidor", e });
+    }
+
+    // await UserPermit.createMany([{ddd das}])
+
+
+    // const { permits, roles } = await getPermitsAndRoles2(
+    //   request,
+    //   response,
+    //   userUpdated["id"]
+    // );
+
+    // const deletes = await
+
+    // console.log({ permits, roles })
+
+
+
+    // const permitsSplited = newPermits.splitItems(permits.map(p => p.id));
+      // console.log(permitsSplited)
+    // if (permitsSplited.deletedItems.length > 0) {
+    //   try {
+    //     // const existsPermits = await Promise.all(
+    //     //   permitsSplited.deletedItems.map(async (p) => {
+    //     //     console.log(p)
+    //     //     const a = (
+    //     //       await UserPermit.query()
+    //     //         .where("user_id", Number(userUpdated.id))
+    //     //         .where("permit_id", Number(p))
+    //     //         .debug(true)
+    //     //     )[0];
+    //     //     return a;
+    //     //   })
+    //     // );
+    //
+    //     // if (existsPermits[0] !== undefined) {
+    //     //   return messageError(
+    //     //     undefined,
+    //     //     response,
+    //     //     "El contrato ya existe.",
+    //     //     400
+    //     //   );
+    //     // }
+    //   } catch (error) {
+    //     return messageError(error, response);
+    //   }
+    // }
 
     // if (permitsSplited["deletedItems"].length > 0) {
     //   console.log('mayor')

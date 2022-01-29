@@ -9,9 +9,9 @@ export default class UserPermit extends BaseModel {
   public user_id: number;
   @column()
   public permit_id: number;
-
   @column()
   public status: number;
+
   @column()
   public audit_trail: IAuditTrail;
 }
