@@ -28,8 +28,6 @@ import { IResponseData } from "App/Utils/interfaces/index";
 import { getRoleId } from "App/Utils/functions/user";
 import { Logger } from "App/Utils/classes/Logger";
 import { Manager } from "App/Utils/enums";
-import Database from "@ioc:Adonis/Lucid/Database";
-// import Database from "@ioc:Adonis/Lucid/Database";
 
 export default class UsersController {
   /**
@@ -155,7 +153,8 @@ export default class UsersController {
           .preload("status_info")
           .select(["user_id as u_id", "*"])
           .whereRaw(
-            `${pagination["search"]!["key"]} LIKE '%${pagination["search"]!["value"]
+            `${pagination["search"]!["key"]} LIKE '%${
+              pagination["search"]!["value"]
             }%'`
           )
           // .where(
@@ -438,7 +437,6 @@ export default class UsersController {
    * update
    */
   public async update({ response, request }: HttpContextContract) {
-    const logger = new Logger(request.ip(), Manager.UsersController);
     const newData = request.body();
 
     // if (newData.user.id_number) {
@@ -562,22 +560,21 @@ export default class UsersController {
 
     // Updating Permits and Roles
     // const { permits, roles }
-    const { permits, roles } = await getPermitsAndRoles(
+    const { permits } = await getPermitsAndRoles(
       request,
       response,
       userUpdated["id"]
     );
 
-
     let newPermits = newData["permits"];
 
-    const permitsSplited = newPermits.splitItems(permits.map(p => p.id));
-      console.log(permitsSplited)
+    const permitsSplited = newPermits.splitItems(permits.map((p) => p.id));
+    console.log(permitsSplited);
     if (permitsSplited.deletedItems.length > 0) {
       try {
-        const existsPermits = await Promise.all(
+        await Promise.all(
           permitsSplited.deletedItems.map(async (p) => {
-            console.log(p)
+            console.log(p);
             const a = (
               await UserPermit.query()
                 .where("user_id", Number(userUpdated.id))
@@ -862,5 +859,5 @@ export default class UsersController {
   /**
    * destroy
    */
-  public async destroy({ }: HttpContextContract) { }
+  public async destroy({}: HttpContextContract) {}
 }
