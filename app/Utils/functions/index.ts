@@ -9,6 +9,7 @@ import UserRole from "App/Models/UserRole";
 import UserPermit from "App/Models/UserPermit";
 import { Action } from "../_types";
 import { IPaginationValidated } from "../interfaces/pagination";
+import Database from "@ioc:Adonis/Lucid/Database";
 
 export const changeStatus = async (
   model: any,
@@ -115,18 +116,22 @@ export const deleteDuplicates = (array: any[]) => {
   let hash = {};
   return array.filter((o) => (hash[o.id] ? false : (hash[o.id] = true)));
 };
+
 // Esto funciona correctamente, ¿Cómo? Sabrá Dios y mi yo del pasado.
 export const getPermitsAndRoles = async (request, response, id?) => {
-  let permits: any[] = [],
-    roles: any[] = [];
-
+  let permits: any[] = [];
+  let roles: any[] = [];
   let payloadToken;
+
   const token = request
     .headers()
     ["authorization"]?.split("Bearer")
     .pop()
     ?.trim();
-  if (token) payloadToken = decodeJWT(token);
+
+  if (token) {
+    payloadToken = decodeJWT(token);
+  }
 
   let userId = typeof id !== "undefined" ? id : payloadToken.id;
 
@@ -137,6 +142,7 @@ export const getPermitsAndRoles = async (request, response, id?) => {
       .innerJoin("permits as p", "rp.permit_id", "p.id")
       .innerJoin("roles as r", "ur.role_id", "r.id")
       .where("ur.user_id", userId);
+
 
     const userPermits = await UserPermit.query()
       .from("user_permits as up")
@@ -166,6 +172,80 @@ export const getPermitsAndRoles = async (request, response, id?) => {
 
     permits = deleteDuplicates(permits);
     roles = deleteDuplicates(roles);
+    return { permits, roles, token };
+  } catch (error) {
+    console.error(error);
+    response.unauthorized({
+      error: "No tiene los permisos para realizar esta acción.",
+    });
+    return { permits: [], roles: [], token: "" };
+  }
+};
+
+export const generalDeleteMultiple = async (table: string, where: {column: string, value: string | number}) => {
+  await Database.rawQuery(`DELETE FROM ${table} WHERE ${where.column} = ${where.value}`);
+  await Database.manager.closeAll();
+}
+
+// PruebaCristian
+export const getPermitsAndRoles2 = async (request, response, id?) => {
+  let payloadToken;
+  const newData = request.body();
+
+  const token = request
+    .headers().authorization?.split("Bearer")
+    .pop()
+    ?.trim();
+
+  if (token) {
+    payloadToken = decodeJWT(token);
+  }
+
+  let userId = typeof id !== "undefined" ? id : payloadToken.id;
+
+  try {
+    // roles en la base de datos
+    const userRoles = await UserRole.query()
+      .from("user_roles as ur")
+      .innerJoin("role_permits as rp", "ur.role_id", "rp.role_id")
+      .innerJoin("permits as p", "rp.permit_id", "p.id")
+      .innerJoin("roles as r", "ur.role_id", "r.id")
+      .where("ur.user_id", userId);
+
+    const userPermits = await UserPermit.query()
+      .from("user_permits as up")
+      .innerJoin("permits as p", "up.permit_id", "p.id")
+      .where("up.user_id", userId);
+
+    let roles = deleteDuplicates(userRoles.map((userRole) => {
+      return {
+        id: userRole["$original"]["role_id"],
+        name: userRole["$extras"]["role_name"],
+      }
+    }));
+
+    let permits = deleteDuplicates(userPermits.map((userRole) => {
+      return  {
+        id: userRole["$original"]["permit_id"],
+        name: userRole["$extras"]["permit_name"],
+      }
+    }));
+
+    const rol_permits = deleteDuplicates(userRoles.map((userRole) => {
+      return {
+        id: userRole["$extras"]["permit_id"],
+        name: userRole["$extras"]["permit_name"],
+      }
+    }));
+
+    let newPermits = newData["permits"];
+    let newRoles = newData["roles"];
+
+    // roles = newRoles
+    // permits = newPermits
+
+    console.log({roles, permits, rol_permits, newPermits, newRoles})
+
 
     return { permits, roles, token };
   } catch (error) {
@@ -176,6 +256,8 @@ export const getPermitsAndRoles = async (request, response, id?) => {
     return { permits: [], roles: [], token: "" };
   }
 };
+
+
 
 export const hasPermit = (permits: any[], permitToValidate: string) => {
   const permitsValidated = permits.filter(
