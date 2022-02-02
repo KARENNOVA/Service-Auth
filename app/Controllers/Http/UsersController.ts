@@ -154,7 +154,8 @@ export default class UsersController {
           .preload("status_info")
           .select(["user_id as u_id", "*"])
           .whereRaw(
-            `${pagination["search"]!["key"]} LIKE '%${pagination["search"]!["value"]
+            `${pagination["search"]!["key"]} LIKE '%${
+              pagination["search"]!["value"]
             }%'`
           )
           // .where(
@@ -437,7 +438,9 @@ export default class UsersController {
    * update
    */
   public async update({ response, request }: HttpContextContract) {
+
     // const logger = new Logger(request.ip(), Manager.UsersController);
+
     const newData = request.body();
 
     // if (newData.user.id_number) {
@@ -560,7 +563,6 @@ export default class UsersController {
 
     // Updating Permits and Roles
     // const { permits, roles }
-
 
     const compute_user_permit = async (user_id, permit_id) => {
       try {
@@ -929,5 +931,5 @@ export default class UsersController {
   /**
    * destroy
    */
-  public async destroy({ }: HttpContextContract) { }
+  public async destroy({}: HttpContextContract) {}
 }
