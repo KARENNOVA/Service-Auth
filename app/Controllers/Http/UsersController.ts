@@ -28,6 +28,8 @@ import { IResponseData } from "App/Utils/interfaces/index";
 import { getRoleId } from "App/Utils/functions/user";
 import { Logger } from "App/Utils/classes/Logger";
 import { Manager } from "App/Utils/enums";
+import { getAddressById } from '../../Services/location';
+import { getDependencies } from '../../Services/core';
 
 export default class UsersController {
   /**
@@ -95,16 +97,29 @@ export default class UsersController {
       responseData["error"] = true;
       return response.status(500).json(responseData);
     }
+    const { token } = getToken(request.headers());
 
-    // const location = await getAddressById(
-    //   Number(detailsUsers[0]["$attributes"]["location"]),
-    //   headerAuthorization
-    // );
+    const location = await getAddressById(
+      Number(detailsUser.toJSON().location),
+      token
+    );
+
+    let dependencies = null
+    if (detailsUser.toJSON().cost_center_id !== null) {
+      dependencies = await getDependencies(
+        Number(detailsUser.toJSON().cost_center_id),
+        token
+      );
+
+    }
 
     let tmpDetailsUser = {
       ...detailsUser["$attributes"],
       status:
         detailsUser["$preloaded"]["status_info"]["$extras"]["status_name"],
+      location: location,
+      dependencies: dependencies || []
+
       // location: { ...location },
     };
 
@@ -112,6 +127,8 @@ export default class UsersController {
       "message"
     ] += `${tmpDetailsUser["names"]["firstName"]} ${tmpDetailsUser["surnames"]["firstSurname"]}`;
     responseData["results"] = { detailsUser: tmpDetailsUser, roles, permits };
+
+
 
     return response.status(200).json(responseData);
   }
