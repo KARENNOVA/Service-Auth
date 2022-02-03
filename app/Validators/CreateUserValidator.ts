@@ -32,7 +32,15 @@ export default class CreateUserValidator {
       entity_type: schema.string({ trim: true }),
       dependency: schema.string.optional({ trim: true }),
       subdependency: schema.string.optional({ trim: true }),
+      cost_center_id:  schema.number.optional(),
     }),
+    permits: schema.array().members(
+      schema.number()
+    ),
+    roles: schema.array().members(
+      schema.number()
+    )
+
   });
 
   /**

@@ -3,7 +3,6 @@ import UserPermit from "App/Models/UserPermit";
 import { getPermitsAndRoles, hasPermit } from ".";
 import AuditTrail from "../classes/AuditTrail";
 import { decodeJWT } from "./jwt";
-
 export const assignPermits = async (
   permits: number[],
   auditTrail: AuditTrail,

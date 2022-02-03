@@ -43,6 +43,10 @@ export default class DetailsUser extends BaseModel {
   @column()
   public gender: string;
 
+
+  @column()
+  public cost_center_id?: number;
+
   @column()
   public user_id: number;
 

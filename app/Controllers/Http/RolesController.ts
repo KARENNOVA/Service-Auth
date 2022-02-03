@@ -18,6 +18,7 @@ import UserRole from "App/Models/UserRole";
 import RolePermit from "App/Models/RolePermit";
 import { getToken } from "App/Utils/functions/jwt";
 import { IPaginationValidated } from "App/Utils/interfaces/pagination";
+import { generalDeleteMultiple } from '../../Utils/functions/index';
 
 export default class RolesController {
   public async index({}: HttpContextContract) {}
@@ -345,6 +346,7 @@ export default class RolesController {
           .save();
 
         if (payload.permits && payload.permits.length > 0) {
+          await generalDeleteMultiple("role_permits", { column: "role_id", value: id })
           const { success } = await assignPermits(
             payload["permits"],
             auditTrail,
