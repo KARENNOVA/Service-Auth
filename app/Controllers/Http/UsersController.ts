@@ -154,8 +154,7 @@ export default class UsersController {
           .preload("status_info")
           .select(["user_id as u_id", "*"])
           .whereRaw(
-            `${pagination["search"]!["key"]} LIKE '%${
-              pagination["search"]!["value"]
+            `${pagination["search"]!["key"]} LIKE '%${pagination["search"]!["value"]
             }%'`
           )
           // .where(
@@ -374,7 +373,10 @@ export default class UsersController {
       location: reqDetailsUser.location,
       cellphone_number: reqDetailsUser.cellphone_number,
       phone_number: reqDetailsUser.phone_number,
+      phone_number_ext: reqDetailsUser.phone_number_ext,
       gender: reqDetailsUser.gender,
+
+      cost_center_id: reqDetailsUser.cost_center_id,
 
       user_id: id,
       status: 1,
@@ -413,6 +415,7 @@ export default class UsersController {
         .json({ message: "No posee los permisos para crear un Usuario." });
 
     const payload: IUserPayload = await request.validate(CreateUserValidator);
+    // const payload = request.body();
 
     try {
       const { user, auditTrail } = await this.createUser(
@@ -425,6 +428,67 @@ export default class UsersController {
         { ...payload["detailsUser"], id_number: payload["user"]["id_number"] },
         auditTrail
       );
+
+      try {
+
+        const compute_user_permit = async (user_id, permit_id) => {
+          try {
+            const auditTrail = new AuditTrail(token);
+            await auditTrail.init();
+            const _json = auditTrail.getAsJson();
+            return {
+              user_id,
+              permit_id,
+              status: 1,
+              audit_trail: _json
+            }
+          } catch (e) {
+            return Promise.reject(e)
+          }
+        }
+
+        const compute_user_rol = async (user_id, role_id) => {
+          try {
+            const auditTrail = new AuditTrail(token);
+            await auditTrail.init();
+            const _json = auditTrail.getAsJson();
+            return {
+              user_id,
+              role_id,
+              status: 1,
+              audit_trail: _json
+            }
+          } catch (e) {
+            return Promise.reject(e)
+          }
+        }
+
+        let newPermits = payload["permits"];
+        let newRoles = payload["roles"];
+
+        const user_permits_to_create: any[] = await Promise.all(newPermits.map((permit) => {
+          return compute_user_permit(detailsUser.toJSON().user_id, permit)
+        }))
+
+        const user_roles_to_create: any[] = await Promise.all(newRoles.map((role) => {
+          return compute_user_rol(detailsUser.toJSON().user_id, role)
+        }))
+
+        // borra los user_roles del usuario
+        if (user_roles_to_create.length > 0) {
+          UserRole.createMany(user_roles_to_create)
+        }
+        // borra los user_permits del usuario
+        if (user_permits_to_create.length > 0) {
+          UserPermit.createMany(user_permits_to_create)
+        }
+      } catch (e) {
+        console.error(e);
+        return response
+          .status(500)
+          .json({ message: "Error al asignar roles y permisos", e });
+      }
+
       return response.status(200).json({
         message: "Usuario creado correctamente.",
         results: { user, detailsUser },
@@ -443,20 +507,20 @@ export default class UsersController {
 
     const newData = request.body();
 
-    // if (newData.user.id_number) {
-    //   try {
-    //     await User.findByOrFail(
-    //       "id_number",
-    //       await base64encode(String(newData.user.id_number))
-    //     );
-    //     return messageError(
-    //       { code: 23505 },
-    //       response,
-    //       "Cédula ya existente.",
-    //       400
-    //     );
-    //   } catch (error) {}
-    // }
+    if (newData.user.id_number) {
+      try {
+        await User.findByOrFail(
+          "id_number",
+          await base64encode(String(newData.user.id_number))
+        );
+        return messageError(
+          { code: 23505 },
+          response,
+          "Cédula ya existente.",
+          400
+        );
+      } catch (error) { }
+    }
 
     let responseData: IResponseData = {
       message: "Usuario actualizado correctamente.",
@@ -537,7 +601,7 @@ export default class UsersController {
       ...newData.detailsUser,
     };
 
-    if (newData.user)
+    if (newData.user.id_number)
       dataToUpdate["id_number"] = String(newData.user.id_number);
 
     delete dataToUpdate["user_id"];
@@ -569,14 +633,14 @@ export default class UsersController {
         const auditTrail = new AuditTrail(token);
         await auditTrail.init();
         const _json = auditTrail.getAsJson();
-        return  {
+        return {
           user_id,
           permit_id,
           status: 1,
           audit_trail: _json
         }
-      }catch (e) {
-        return  Promise.reject(e)
+      } catch (e) {
+        return Promise.reject(e)
       }
     }
 
@@ -585,18 +649,18 @@ export default class UsersController {
         const auditTrail = new AuditTrail(token);
         await auditTrail.init();
         const _json = auditTrail.getAsJson();
-        return  {
+        return {
           user_id,
           role_id,
           status: 1,
           audit_trail: _json
         }
-      }catch (e) {
-        return  Promise.reject(e)
+      } catch (e) {
+        return Promise.reject(e)
       }
     }
 
-    try{
+    try {
       let newPermits = newData["permits"];
       let newRoles = newData["roles"];
 
@@ -609,16 +673,16 @@ export default class UsersController {
       }))
 
       // borra los user_roles del usuario
-      await generalDeleteMultiple("user_roles", {column: "user_id", value: id});
-      if(user_roles_to_create.length > 0) {
+      await generalDeleteMultiple("user_roles", { column: "user_id", value: id });
+      if (user_roles_to_create.length > 0) {
         UserRole.createMany(user_roles_to_create)
       }
       // borra los user_permits del usuario
-      await generalDeleteMultiple("user_permits", {column: "user_id", value: id})
-      if(user_permits_to_create.length > 0) {
+      await generalDeleteMultiple("user_permits", { column: "user_id", value: id })
+      if (user_permits_to_create.length > 0) {
         UserPermit.createMany(user_permits_to_create)
       }
-    }catch (e) {
+    } catch (e) {
       console.error(e);
       return response
         .status(500)
@@ -641,7 +705,7 @@ export default class UsersController {
 
 
     // const permitsSplited = newPermits.splitItems(permits.map(p => p.id));
-      // console.log(permitsSplited)
+    // console.log(permitsSplited)
     // if (permitsSplited.deletedItems.length > 0) {
     //   try {
     //     // const existsPermits = await Promise.all(
@@ -931,5 +995,5 @@ export default class UsersController {
   /**
    * destroy
    */
-  public async destroy({}: HttpContextContract) {}
+  public async destroy({ }: HttpContextContract) { }
 }

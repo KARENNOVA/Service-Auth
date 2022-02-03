@@ -28,8 +28,11 @@ export interface IDetailsUser {
   email: string;
   location: string;
   cellphone_number?: number;
+  phone_number_ext?: number;
   phone_number: number;
   gender: string;
+
+  cost_center_id: number;
 
   user_id: number;
 
